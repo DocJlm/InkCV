@@ -1,0 +1,23 @@
+{
+  "name": "@inkcv/exporters",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@inkcv/core": "workspace:*",
+    "fflate": "^0.8.2",
+    "mustache": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/mustache": "^4.2.6",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@inkcv/core",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "nanoid": "^5.1.5",
+    "yaml": "^2.8.0",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "fast-check": "^4.1.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

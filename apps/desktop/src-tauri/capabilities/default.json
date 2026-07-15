@@ -1,0 +1,19 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Minimal capabilities for the InkCV main window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "fs:allow-read-text-file",
+    "fs:allow-read-file",
+    "fs:allow-stat",
+    "fs:allow-write-file",
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://**" }]
+    },
+    "opener:default"
+  ]
+}

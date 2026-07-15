@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "InkCV",
+  "version": "0.2.0",
+  "identifier": "app.inkcv.desktop",
+  "build": {
+    "beforeDevCommand": "pnpm --filter @inkcv/web dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "pnpm --filter @inkcv/web build",
+    "frontendDist": "../../web/.output/public"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "InkCV 墨简历",
+        "width": 1280,
+        "height": 840,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost blob: data: https:; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost https:; worker-src 'self' blob:; font-src 'self' data:; frame-src blob: data:; object-src 'none'; base-uri 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Productivity",
+    "shortDescription": "Local-first resume builder",
+    "longDescription": "A local-first resume builder with form and Markdown editing, PDF preview, AI assistance, backups and portable exports.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

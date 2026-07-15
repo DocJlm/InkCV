@@ -1,0 +1,27 @@
+{
+  "name": "@inkcv/renderer",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "fetch-fonts": "node scripts/fetch-fonts.mjs",
+    "render-previews": "vite-node scripts/render-template-previews.ts"
+  },
+  "dependencies": {
+    "@inkcv/core": "workspace:*",
+    "@react-pdf/renderer": "^4.5.1",
+    "pdfjs-dist": "^6.1.200",
+    "react": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.3",
+    "typescript": "^5.8.3",
+    "vite-node": "^3.2.4",
+    "vitest": "^3.2.4"
+  }
+}

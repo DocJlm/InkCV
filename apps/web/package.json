@@ -1,0 +1,35 @@
+{
+  "name": "@inkcv/web",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@inkcv/ai": "workspace:*",
+    "@inkcv/core": "workspace:*",
+    "@inkcv/ui": "workspace:*",
+    "@tauri-apps/api": "^2.9.1",
+    "@tauri-apps/plugin-dialog": "^2.4.2",
+    "@tauri-apps/plugin-fs": "^2.4.4",
+    "@tauri-apps/plugin-http": "^2.5.7",
+    "@tauri-apps/plugin-opener": "^2.5.2",
+    "idb": "^8.0.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.3",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "typescript": "^5.8.3",
+    "nitro": "^3.0.1-alpha.1",
+    "vite": "^8.1.4",
+    "vitest": "^3.2.4"
+  }
+}

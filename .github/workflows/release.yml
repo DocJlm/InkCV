@@ -1,0 +1,75 @@
+name: Desktop release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bundles: nsis,msi
+          - os: macos-13
+            target: x86_64-apple-darwin
+            bundles: dmg
+          - os: macos-14
+            target: aarch64-apple-darwin
+            bundles: dmg
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            bundles: appimage,deb
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Install Linux system packages
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - run: pnpm install --frozen-lockfile
+      - name: Cache CJK fonts
+        uses: actions/cache@v4
+        with:
+          path: packages/renderer/assets/fonts
+          key: noto-cjk-v1
+      - run: node packages/renderer/scripts/fetch-fonts.mjs
+      - name: Build and upload unsigned bundles
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: apps/desktop
+          tagName: v__VERSION__
+          releaseName: InkCV v__VERSION__
+          releaseBody: |
+            InkCV v0.2 public beta. These packages are currently unsigned.
+
+            Windows SmartScreen and macOS Gatekeeper may show a warning. Verify the SHA-256 file before continuing.
+          releaseDraft: true
+          prerelease: true
+          args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+      - name: Generate SHA-256 files
+        shell: bash
+        run: node scripts/write-checksums.mjs apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle
+      - name: Upload SHA-256 files to draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          prerelease: true
+          files: apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.sha256

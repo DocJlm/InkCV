@@ -1,0 +1,38 @@
+name: Bug 反馈 / Bug report
+description: 报告一个可复现的问题 / Report a reproducible problem
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ 这里是 InkCV 软件的问题跟踪区，**不是简历投递入口**。求职相关内容会被直接关闭。
+        This tracker is for InkCV software issues only — resumes/job applications will be closed.
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么 / What happened
+      description: 说清楚预期行为和实际行为 / Expected vs actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤 / Steps to reproduce
+      placeholder: |
+        1. 打开 …
+        2. 点击 …
+        3. 出现 …
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 环境 / Environment
+      placeholder: "Web (Chrome 130) / 桌面版 v0.1.0 (Windows 11)"
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: 最小复现简历（可选）/ Minimal resume sample (optional)
+      description: 如与特定内容有关，请粘贴脱敏后的 Markdown / Paste anonymized Markdown if content-related

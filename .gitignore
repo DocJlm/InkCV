@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+.DS_Store
+coverage/
+apps/desktop/src-tauri/target/
+*.tsbuildinfo
+.vite/
+packages/renderer/assets/fonts/
+.playwright-mcp/
+apps/web/.output/
+.codex-dev.*.log
