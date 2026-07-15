@@ -6,6 +6,7 @@ test.use({ screenshot: 'off', trace: 'off', video: 'off' });
 const liveKey = process.env.INKCV_LIVE_AI_KEY;
 
 test('production DeepSeek import, polish, auth error and secret lifecycle', async ({ page, request, baseURL }) => {
+  test.setTimeout(300_000);
   test.skip(!liveKey, 'INKCV_LIVE_AI_KEY is required for the production live-AI gate');
   expect(new URL(baseURL!).hostname).toBe('inkcv.vercel.app');
   await openFreshApp(page);
