@@ -317,14 +317,14 @@ describe('translateResume', () => {
 
   it('creates a translated copy without sending contacts, dates or photos', async () => {
     const source = sampleResume('en');
-    source.settings.template = 'classic';
+    source.settings.template = 'compact-tech';
     source.basics.photo = { src: 'data:image/jpeg;base64,secret-photo', visible: true };
     const calls = stubFetch({ choices: [{ message: { content: JSON.stringify(translatedResponse(source)) } }] });
 
     const translated = await translateResume(OPENAI_CFG, source, 'zh');
     expect(translated.meta.id).not.toBe(source.meta.id);
     expect(translated.settings.locale).toBe('zh');
-    expect(translated.settings.template).toBe('classic');
+    expect(translated.settings.template).toBe('compact-tech');
     expect(translated.basics.name).toBe('李墨');
     expect(translated.basics.contacts).toEqual(source.basics.contacts);
     expect(translated.basics.photo).toEqual(source.basics.photo);

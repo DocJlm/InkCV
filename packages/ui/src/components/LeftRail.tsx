@@ -25,6 +25,7 @@ export function LeftRail({
   currentId,
   currentName,
   lang,
+  hiddenFromA11y,
   onOpen,
   onNew,
   onDuplicate,
@@ -38,6 +39,7 @@ export function LeftRail({
   currentId: string | null;
   currentName: string;
   lang: Lang;
+  hiddenFromA11y: boolean;
   onOpen: (id: string) => void;
   onNew: (kind: 'zh' | 'en' | 'blank') => void;
   onDuplicate: (id: string) => void;
@@ -58,7 +60,7 @@ export function LeftRail({
   ];
 
   return (
-    <aside className="ink-rail">
+    <aside className="ink-rail" aria-hidden={hiddenFromA11y} inert={hiddenFromA11y}>
       <div className="ink-brand">
         <span className="ink-logo" aria-hidden="true">墨</span>
         <div className="ink-brand-text">
@@ -102,7 +104,7 @@ export function LeftRail({
                   { key: 'del', label: t('menu.delete'), icon: <IconTrash />, danger: true, onSelect: () => onDelete(meta) },
                 ]}
                 trigger={(open, isOpen) => (
-                  <button className={`ink-icon-btn ink-doc-more${isOpen ? ' active' : ''}`} onClick={open} aria-label="more">
+                  <button className={`ink-icon-btn ink-doc-more${isOpen ? ' active' : ''}`} onClick={open} aria-label={t('common.moreActions')}>
                     <IconMore />
                   </button>
                 )}

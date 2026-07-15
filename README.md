@@ -1,8 +1,8 @@
 # InkCV · 墨简
 
-> Local-first résumé builder with form and Markdown editing, true PDF preview, eight layouts, BYO-key AI translation, backups, and portable exports.
+> Local-first résumé builder with form and Markdown editing, true PDF preview, four focused layouts, BYO-key AI translation, backups, and portable exports.
 >
-> 本地优先的开源简历工具：表单与 Markdown 双模式编辑、真实 PDF 预览、八款布局、自带 Key 的 AI 翻译、备份与完整导出。
+> 本地优先的开源简历工具：表单与 Markdown 双模式编辑、真实 PDF 预览、四款精选布局、自带 Key 的 AI 翻译、备份与完整导出。
 
 [在线版 / Web app](https://inkcv.vercel.app) · [桌面版 / Desktop downloads](https://github.com/DocJlm/InkCV/releases/tag/v0.3.0) · [反馈 / Feedback](https://github.com/DocJlm/InkCV/discussions) · [隐私说明 / Privacy](docs/PRIVACY.md) · [参与贡献 / Contributing](CONTRIBUTING.md)
 
@@ -18,8 +18,9 @@
 
 - 表单和 Markdown 可随时切换，JSON 始终是唯一数据源，稳定 ID 在 Markdown 回环后保持不变。
 - 预览与导出共用 `compileResume()`，你看到的 PDF 就是最终下载的 PDF。
-- 玄墨、青石、经典、极简 ATS、技术密排、侧标、脉络、名片八款独立布局，支持中英文、照片、跨页与黑/蓝/自定义配色。
-- “界面语言”和“简历语言”相互独立；可只切换排版规则，也可用 AI 翻译完整内容并创建副本，原文不会被覆盖。
+- 玄墨、青石、极简 ATS、技术密排四款布局，支持中英文、照片、跨页与黑/蓝/自定义配色。
+- 界面语言和简历正文相互独立；排版语言默认从正文自动识别，也可在高级样式中覆盖。AI 翻译会创建副本，原文不会被覆盖。
+- 桌面工作台的列表、编辑器和预览可像 VS Code 一样拖拽调宽，双击分隔线恢复默认值。
 - PDF 默认实时适宽；100% 使用真实 96 CSS DPI，并支持 50%–200%、全屏与高清重绘。
 - 支持 PDF、Markdown、LaTeX；带照片时 LaTeX 自动导出为包含图片的 ZIP；`.inkcv` 可完整备份和恢复。
 - AI 支持 OpenAI、DeepSeek、Anthropic、Moonshot/Kimi 与自定义 OpenAI-compatible 地址。所有模型名都可编辑。
@@ -68,7 +69,7 @@ pnpm --filter @inkcv/desktop dev
 
 - Switch between approachable forms and Markdown while JSON remains the single source of truth.
 - Preview and export share the exact same react-pdf compile path.
-- Eight distinct bilingual layouts with photos, multi-page content, black, blue, and custom colors.
+- Four focused bilingual layouts with photos, multi-page content, black, blue, and custom colors.
 - Interface and résumé languages are independent; AI translation creates a validated copy and never overwrites the source.
 - Fit-width PDF preview, true 96 CSS DPI at 100%, 50%–200% zoom, and full screen.
 - Export PDF, Markdown, LaTeX or a photo-aware ZIP, plus a complete `.inkcv` backup.

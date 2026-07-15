@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactElement, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   sampleResume,
@@ -6,6 +6,7 @@ import {
   cloneDoc,
   newId,
   parseInkCvBackup,
+  resolveResumeLocale,
   type ResumeDoc,
 } from '@inkcv/core';
 import { useEditorStore } from '../store';
@@ -19,6 +20,16 @@ import { MarkdownEditor } from './MarkdownEditor';
 import { PreviewPane } from './PreviewPane';
 import { Modal } from '../primitives';
 import { AiSettingsModal, AiImportModal, AiTranslateModal } from './AiModals';
+import { WorkspaceSplitter } from './WorkspaceSplitter';
+import {
+  DEFAULT_WORKSPACE_LAYOUT,
+  clampWorkspaceLayout,
+  readWorkspaceLayout,
+  workspaceMode,
+  writeWorkspaceLayout,
+  type WorkspaceLayout,
+  type WorkspaceSplitterKind,
+} from '../workspaceLayout';
 
 export function InkCvApp(props: { store: DocStore; services?: AppServices }): ReactElement {
   return (
@@ -41,11 +52,77 @@ function InkCvAppInner({ store }: { store: DocStore }): ReactElement {
   const [backupCandidate, setBackupCandidate] = useState<ResumeDoc | null>(null);
   const [backupError, setBackupError] = useState<string | null>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const appRef = useRef<HTMLDivElement>(null);
+  const liveLayout = useRef<WorkspaceLayout>(readWorkspaceLayout(typeof window === 'undefined' ? null : window.localStorage));
+  const [layout, setLayout] = useState(liveLayout.current);
+  const [workspaceWidth, setWorkspaceWidth] = useState(typeof window === 'undefined' ? 1280 : window.innerWidth);
   const { files, appVersion, openExternal } = useAppServices();
 
   const loadDoc = useEditorStore((s) => s.loadDoc);
   const currentDoc = useEditorStore((s) => s.doc);
   const lang = (i18n.language?.startsWith('zh') ? 'zh' : 'en') as Lang;
+
+  const applyWorkspaceLayout = useCallback((candidate: WorkspaceLayout, width = workspaceWidth) => {
+    const next = clampWorkspaceLayout(candidate, width);
+    liveLayout.current = next;
+    const root = appRef.current;
+    if (root) {
+      root.style.setProperty('--ink-rail-width', `${next.rail}px`);
+      root.style.setProperty('--ink-desktop-editor-width', `${next.desktopEditor}px`);
+      root.style.setProperty('--ink-medium-editor-width', `${next.mediumEditor}px`);
+    }
+    return next;
+  }, [workspaceWidth]);
+
+  useEffect(() => {
+    const root = appRef.current;
+    if (!root) return;
+    const update = () => {
+      const width = root.clientWidth;
+      setWorkspaceWidth(width);
+      const next = clampWorkspaceLayout(liveLayout.current, width);
+      liveLayout.current = next;
+      setLayout(next);
+      root.style.setProperty('--ink-rail-width', `${next.rail}px`);
+      root.style.setProperty('--ink-desktop-editor-width', `${next.desktopEditor}px`);
+      root.style.setProperty('--ink-medium-editor-width', `${next.mediumEditor}px`);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
+
+  const changeSplitter = useCallback((kind: WorkspaceSplitterKind, value: number, persist: boolean) => {
+    const mode = workspaceMode(workspaceWidth);
+    const candidate = { ...liveLayout.current };
+    if (kind === 'rail') candidate.rail = value;
+    else if (mode === 'desktop') candidate.desktopEditor = value;
+    else candidate.mediumEditor = value;
+    const next = applyWorkspaceLayout(candidate);
+    if (persist) {
+      setLayout(next);
+      writeWorkspaceLayout(window.localStorage, next);
+    }
+  }, [applyWorkspaceLayout, workspaceWidth]);
+
+  const resetSplitter = useCallback((kind: WorkspaceSplitterKind) => {
+    const mode = workspaceMode(workspaceWidth);
+    const candidate = { ...liveLayout.current };
+    if (kind === 'rail') candidate.rail = DEFAULT_WORKSPACE_LAYOUT.rail;
+    else if (mode === 'desktop') candidate.desktopEditor = DEFAULT_WORKSPACE_LAYOUT.desktopEditor;
+    else candidate.mediumEditor = DEFAULT_WORKSPACE_LAYOUT.mediumEditor;
+    const next = applyWorkspaceLayout(candidate);
+    setLayout(next);
+    writeWorkspaceLayout(window.localStorage, next);
+  }, [applyWorkspaceLayout, workspaceWidth]);
+
+  const mode = workspaceMode(workspaceWidth);
+  const editorValue = mode === 'desktop' ? layout.desktopEditor : layout.mediumEditor;
+  const editorMin = mode === 'desktop' ? 420 : 360;
+  const editorMax = mode === 'desktop'
+    ? Math.max(editorMin, workspaceWidth - layout.rail - 12 - 380)
+    : Math.max(editorMin, workspaceWidth - 6 - 340);
 
   const refreshList = useCallback(async () => {
     const list = await store.list();
@@ -189,17 +266,26 @@ function InkCvAppInner({ store }: { store: DocStore }): ReactElement {
         <p>{t('responsive.desktopBody')}</p>
       </div>
 
-      <div className={`ink-app ink-mobile-${mobilePane}${railOpen ? ' ink-rail-open' : ''}`}>
-      <button
+      <div
+        ref={appRef}
+        className={`ink-app ink-mobile-${mobilePane}${railOpen ? ' ink-rail-open' : ''}`}
+        style={{
+          '--ink-rail-width': `${layout.rail}px`,
+          '--ink-desktop-editor-width': `${layout.desktopEditor}px`,
+          '--ink-medium-editor-width': `${layout.mediumEditor}px`,
+        } as CSSProperties}
+      >
+      {railOpen && <button
         className="ink-rail-backdrop"
-        aria-label={t('common.close')}
+        aria-label={t('nav.closeResumes')}
         onClick={() => setRailOpen(false)}
-      />
+      />}
       <LeftRail
         docs={docs}
         currentId={currentId}
         currentName={currentDoc?.basics.name ?? ''}
         lang={lang}
+        hiddenFromA11y={mode !== 'desktop' && !railOpen}
         onOpen={(id) => void openDoc(id)}
         onNew={handleNew}
         onDuplicate={(id) => void handleDuplicate(id)}
@@ -219,7 +305,29 @@ function InkCvAppInner({ store }: { store: DocStore }): ReactElement {
         }}
       />
 
+      <WorkspaceSplitter
+        kind="rail"
+        label={t('workspace.resizeRail')}
+        value={layout.rail}
+        min={180}
+        max={360}
+        onPreview={(kind, value) => changeSplitter(kind, value, false)}
+        onCommit={(kind, value) => changeSplitter(kind, value, true)}
+        onReset={resetSplitter}
+      />
+
       <MiddlePane onOpenRail={() => setRailOpen(true)} onTranslate={() => setTranslateOpen(true)} />
+
+      <WorkspaceSplitter
+        kind="editor"
+        label={t('workspace.resizeEditor')}
+        value={editorValue}
+        min={editorMin}
+        max={editorMax}
+        onPreview={(kind, value) => changeSplitter(kind, value, false)}
+        onCommit={(kind, value) => changeSplitter(kind, value, true)}
+        onReset={resetSplitter}
+      />
 
       <PreviewPane />
 
@@ -309,8 +417,8 @@ function MiddlePane({ onOpenRail, onTranslate }: { onOpenRail: () => void; onTra
   const viewMode = useEditorStore((s) => s.viewMode);
   const setViewMode = useEditorStore((s) => s.setViewMode);
   const hasDoc = useEditorStore((s) => s.doc !== null);
-  const locale = useEditorStore((s) => s.doc?.settings.locale ?? 'zh');
-  const updateDoc = useEditorStore((s) => s.updateDoc);
+  const doc = useEditorStore((s) => s.doc);
+  const locale = doc ? resolveResumeLocale(doc) : 'zh';
 
   return (
     <div className="ink-middle">
@@ -339,21 +447,12 @@ function MiddlePane({ onOpenRail, onTranslate }: { onOpenRail: () => void; onTra
           </button>
         </div>
         <div className="ink-spacer" />
-        <label className="ink-document-language">
-          <span>{t('documentLanguage.label')}</span>
-          <select
-            data-testid="document-language"
-            className="ink-input ink-select-sm"
-            value={locale}
-            title={t('documentLanguage.formatOnly')}
-            onChange={(event) => updateDoc((draft) => void (draft.settings.locale = event.target.value as 'zh' | 'en'))}
-          >
-            <option value="zh">{t('documentLanguage.zh')}</option>
-            <option value="en">{t('documentLanguage.en')}</option>
-          </select>
-        </label>
+        <span className="ink-document-language" data-testid="document-language" title={t('documentLanguage.autoHint')}>
+          <span>{t('documentLanguage.detected')}</span>
+          <strong>{t(locale === 'zh' ? 'documentLanguage.zh' : 'documentLanguage.en')}</strong>
+        </span>
         <button data-testid="ai-translate-open" className="ink-btn ink-btn-sm ink-btn-ai" onClick={onTranslate}>
-          {t('documentLanguage.translate')}
+          {t(locale === 'zh' ? 'documentLanguage.translateToEn' : 'documentLanguage.translateToZh')}
         </button>
       </div>
       <div className="ink-middle-body">

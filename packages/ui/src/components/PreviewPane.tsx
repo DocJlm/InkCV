@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   templates,
@@ -9,6 +9,7 @@ import {
 import { exportTexBundle, texTemplates } from '@inkcv/exporters';
 import {
   RESUME_COLOR_PRESETS,
+  resolveResumeLocale,
   serializeInkCvBackup,
   serializeResumeToMarkdown,
   type ResumeColorPresetId,
@@ -31,10 +32,6 @@ const TEMPLATE_PREVIEWS = {
     zh: new URL('../assets/template-previews/lapis-zh.png', import.meta.url).href,
     en: new URL('../assets/template-previews/lapis-en.png', import.meta.url).href,
   },
-  classic: {
-    zh: new URL('../assets/template-previews/classic-zh.png', import.meta.url).href,
-    en: new URL('../assets/template-previews/classic-en.png', import.meta.url).href,
-  },
   'minimal-ats': {
     zh: new URL('../assets/template-previews/minimal-ats-zh.png', import.meta.url).href,
     en: new URL('../assets/template-previews/minimal-ats-en.png', import.meta.url).href,
@@ -43,29 +40,13 @@ const TEMPLATE_PREVIEWS = {
     zh: new URL('../assets/template-previews/compact-tech-zh.png', import.meta.url).href,
     en: new URL('../assets/template-previews/compact-tech-en.png', import.meta.url).href,
   },
-  'section-rail': {
-    zh: new URL('../assets/template-previews/section-rail-zh.png', import.meta.url).href,
-    en: new URL('../assets/template-previews/section-rail-en.png', import.meta.url).href,
-  },
-  timeline: {
-    zh: new URL('../assets/template-previews/timeline-zh.png', import.meta.url).href,
-    en: new URL('../assets/template-previews/timeline-en.png', import.meta.url).href,
-  },
-  profile: {
-    zh: new URL('../assets/template-previews/profile-zh.png', import.meta.url).href,
-    en: new URL('../assets/template-previews/profile-en.png', import.meta.url).href,
-  },
 } as const;
 
 const TEMPLATE_DESCRIPTION_KEYS = {
   onyx: 'template.onyx.description',
   lapis: 'template.lapis.description',
-  classic: 'template.classic.description',
   'minimal-ats': 'template.minimalAts.description',
   'compact-tech': 'template.compactTech.description',
-  'section-rail': 'template.sectionRail.description',
-  timeline: 'template.timeline.description',
-  profile: 'template.profile.description',
 } as const;
 
 export function PreviewPane(): ReactNode {
@@ -77,6 +58,10 @@ export function PreviewPane(): ReactNode {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fullscreenButtonRef = useRef<HTMLButtonElement>(null);
+  const styleButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileMoreButtonRef = useRef<HTMLButtonElement>(null);
+  const fullscreenReturnFocusRef = useRef<HTMLElement | null>(null);
+  const styleReturnFocusRef = useRef<HTMLElement | null>(null);
   const controllerRef = useRef<PdfPreviewController | null>(null);
   const pendingRevision = useRef(0);
   const freshRevision = useRef(-1);
@@ -92,6 +77,7 @@ export function PreviewPane(): ReactNode {
   const [error, setError] = useState<string | null>(null);
   const [styleOpen, setStyleOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const closeStyle = useCallback(() => setStyleOpen(false), []);
 
   const pageWidth = (doc?.settings.page.size === 'Letter' ? 612 : 595.28) * PDF_TO_CSS;
   // Fit mode may go below the explicit 50% control on narrow phones so the
@@ -113,12 +99,16 @@ export function PreviewPane(): ReactNode {
     if (!fullscreen) return;
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key === 'Escape') {
+        // Fullscreen is the top-most layer. Consume Escape here so an open
+        // theme drawer underneath is not closed by the same key press.
+        event.preventDefault();
+        event.stopImmediatePropagation();
         setFullscreen(false);
-        requestAnimationFrame(() => fullscreenButtonRef.current?.focus());
+        requestAnimationFrame(() => fullscreenReturnFocusRef.current?.focus());
       }
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
   }, [fullscreen]);
 
   // Create the controller once.
@@ -237,28 +227,74 @@ export function PreviewPane(): ReactNode {
 
         <div className="ink-spacer" />
 
-        <button
-          ref={fullscreenButtonRef}
-          data-testid="preview-fullscreen"
-          className="ink-btn ink-btn-sm"
-          aria-pressed={fullscreen}
-          onClick={() => setFullscreen((value) => !value)}
-        >
-          {fullscreen ? t('preview.exitFullscreen') : t('preview.fullscreen')}
-        </button>
+        <div className="ink-preview-secondary">
+          <button
+            ref={fullscreenButtonRef}
+            data-testid="preview-fullscreen"
+            className="ink-btn ink-btn-sm"
+            aria-pressed={fullscreen}
+            onClick={(event) => {
+              fullscreenReturnFocusRef.current = event.currentTarget;
+              setFullscreen((value) => !value);
+            }}
+          >
+            {fullscreen ? t('preview.exitFullscreen') : t('preview.fullscreen')}
+          </button>
 
-        <button
-          data-testid="style-toggle"
-          className={`ink-btn ink-btn-sm${styleOpen ? ' active' : ''}`}
-          onClick={() => setStyleOpen((v) => !v)}
-        >
-          <IconSliders /> {t('preview.style')}
-        </button>
+          <button
+            ref={styleButtonRef}
+            data-testid="style-toggle"
+            className={`ink-btn ink-btn-sm${styleOpen ? ' active' : ''}`}
+            aria-expanded={styleOpen}
+            aria-controls="ink-theme-drawer"
+            onClick={(event) => {
+              styleReturnFocusRef.current = event.currentTarget;
+              setStyleOpen((v) => !v);
+            }}
+          >
+            <IconSliders /> {t('preview.style')}
+          </button>
+        </div>
+
+        <div className="ink-preview-more">
+          <DropdownMenu
+            align="right"
+            trigger={(open, isOpen) => (
+              <button
+                ref={mobileMoreButtonRef}
+                className="ink-icon-btn"
+                aria-label={t('common.moreActions')}
+                aria-expanded={isOpen}
+                onClick={open}
+              >
+                ⋯
+              </button>
+            )}
+            items={[
+              {
+                key: 'fullscreen',
+                label: fullscreen ? t('preview.exitFullscreen') : t('preview.fullscreen'),
+                onSelect: () => {
+                  fullscreenReturnFocusRef.current = mobileMoreButtonRef.current;
+                  setFullscreen((value) => !value);
+                },
+              },
+              {
+                key: 'style',
+                label: t('preview.style'),
+                onSelect: () => {
+                  styleReturnFocusRef.current = mobileMoreButtonRef.current;
+                  setStyleOpen(true);
+                },
+              },
+            ]}
+          />
+        </div>
 
         <ExportMenu isPreviewFresh={isPreviewFresh} />
       </div>
 
-      {styleOpen && <ThemeDrawer />}
+      {styleOpen && <ThemeDrawer onClose={closeStyle} returnFocus={styleReturnFocusRef} />}
 
       <div className="ink-preview-scroll" ref={scrollRef}>
         {pageCount === 0 && (
@@ -299,7 +335,8 @@ function TemplateGallery(): ReactNode {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const currentTemplate = useEditorStore((state) => state.doc?.settings.template ?? 'onyx');
   const uiZh = i18n.language.toLowerCase().startsWith('zh');
-  const documentLocale = useEditorStore((state) => state.doc?.settings.locale ?? 'zh');
+  const resumeDoc = useEditorStore((state) => state.doc);
+  const documentLocale = resumeDoc ? resolveResumeLocale(resumeDoc) : 'zh';
   const current = templates.find((template) => template.id === currentTemplate) ?? templates[0]!;
 
   useEffect(() => {
@@ -379,7 +416,7 @@ function TemplateGallery(): ReactNode {
           </div>
           <div className="ink-template-grid" role="listbox" onKeyDown={moveFocus}>
             {templates.map((template) => {
-              const selected = template.id === currentTemplate;
+              const selected = template.id === current.id;
               const preview = TEMPLATE_PREVIEWS[template.id][documentLocale];
               return (
                 <button
@@ -447,11 +484,13 @@ function ExportMenu({ isPreviewFresh }: { isPreviewFresh: () => boolean }): Reac
     await files.save(serializeResumeToMarkdown(doc), `${fileBase(doc)}.md`, 'text/markdown');
   };
 
-  const exportLatex = async () => {
+  const exportLatex = async (templateId: string) => {
     const doc = useEditorStore.getState().doc;
     if (!doc) return;
     const base = fileBase(doc);
-    const bundle = exportTexBundle(doc, base);
+    const exportDoc = { ...doc, settings: { ...doc.settings, texTemplate: templateId } };
+    useEditorStore.getState().updateDoc((draft) => void (draft.settings.texTemplate = templateId));
+    const bundle = exportTexBundle(exportDoc, base);
     await files.save(bundle.data, `${base}.${bundle.extension}`, bundle.mime);
   };
 
@@ -461,13 +500,17 @@ function ExportMenu({ isPreviewFresh }: { isPreviewFresh: () => boolean }): Reac
     await files.save(serializeInkCvBackup(doc), `${fileBase(doc)}.inkcv`, 'application/json');
   };
 
-  const texTemplate = useEditorStore((s) => s.doc?.settings.texTemplate ?? 'moderncv-like');
   const zh = i18n.language.toLowerCase().startsWith('zh');
 
   const items: MenuItem[] = [
     { key: 'pdf', label: t('export.pdf'), testId: 'export-pdf', onSelect: () => void exportPdf() },
     { key: 'md', label: t('export.md'), testId: 'export-md', onSelect: () => void exportMd() },
-    { key: 'tex', label: t('export.tex'), testId: 'export-tex', onSelect: () => void exportLatex() },
+    ...texTemplates.map((template) => ({
+      key: `tex-${template.id}`,
+      label: t('export.texWith', { name: zh ? template.nameZh : template.nameEn }),
+      testId: template.id === 'moderncv-like' ? 'export-tex' : `export-tex-${template.id}`,
+      onSelect: () => void exportLatex(template.id),
+    })),
     { key: 'inkcv', label: t('export.inkcv'), testId: 'export-inkcv', onSelect: () => void exportBackup() },
   ];
 
@@ -476,26 +519,9 @@ function ExportMenu({ isPreviewFresh }: { isPreviewFresh: () => boolean }): Reac
       align="right"
       items={items}
       trigger={(open) => (
-        <div className="ink-export-wrap">
-          <button data-testid="export-menu" className="ink-btn ink-btn-sm ink-btn-primary" onClick={open}>
-            <IconDownload /> {t('preview.export')}
-          </button>
-          <select
-            data-testid="tex-template"
-            className="ink-input ink-select-sm ink-tex-select"
-            value={texTemplate}
-            title={t('export.texTemplate')}
-            onChange={(e) =>
-              useEditorStore.getState().updateDoc((d) => void (d.settings.texTemplate = e.target.value))
-            }
-          >
-            {texTemplates.map((tp) => (
-              <option key={tp.id} value={tp.id}>
-                .tex · {zh ? tp.nameZh : tp.nameEn}
-              </option>
-            ))}
-          </select>
-        </div>
+        <button data-testid="export-menu" className="ink-btn ink-btn-sm ink-btn-primary" onClick={open}>
+          <IconDownload /> {t('preview.export')}
+        </button>
       )}
     />
   );
@@ -504,13 +530,50 @@ function ExportMenu({ isPreviewFresh }: { isPreviewFresh: () => boolean }): Reac
 // ---------------------------------------------------------------------------
 // Theme drawer
 
-function ThemeDrawer(): ReactNode {
+function ThemeDrawer({
+  onClose,
+  returnFocus,
+}: {
+  onClose: () => void;
+  returnFocus: { current: HTMLElement | null };
+}): ReactNode {
   const { t } = useTranslation();
   const doc = useEditorStore((s) => s.doc);
   const updateDoc = useEditorStore((s) => s.updateDoc);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+        returnFocus.current?.focus();
+        return;
+      }
+      if (event.key !== 'Tab' || !drawerRef.current) return;
+      const focusable = Array.from(drawerRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ));
+      if (focusable.length === 0) return;
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    const frame = requestAnimationFrame(() => drawerRef.current?.querySelector<HTMLElement>('button, select, input')?.focus());
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [onClose, returnFocus]);
   if (!doc) return null;
-  const { tokens, page, locale } = doc.settings;
-  const lhMin = locale === 'zh' ? 1.4 : 1.1;
+  const { tokens, page, localeMode } = doc.settings;
+  const resolvedLocale = resolveResumeLocale(doc);
+  const lhMin = resolvedLocale === 'zh' ? 1.4 : 1.1;
   const activePreset = (Object.keys(RESUME_COLOR_PRESETS) as ResumeColorPresetId[]).find(
     (id) => {
       const preset = RESUME_COLOR_PRESETS[id];
@@ -520,7 +583,24 @@ function ThemeDrawer(): ReactNode {
   );
 
   return (
-    <div className="ink-theme-drawer">
+    <>
+      <button className="ink-theme-backdrop" aria-label={t('common.close')} onClick={onClose} />
+      <div
+        id="ink-theme-drawer"
+        ref={drawerRef}
+        className="ink-theme-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('style.title')}
+        data-testid="style-drawer"
+      >
+      <header className="ink-theme-head">
+        <strong>{t('style.title')}</strong>
+        <button className="ink-icon-btn" aria-label={t('common.close')} onClick={() => {
+          onClose();
+          returnFocus.current?.focus();
+        }}><IconClose /></button>
+      </header>
       <div className="ink-theme-row">
         <label className="ink-theme-field">
           <span>{t('style.font')}</span>
@@ -598,7 +678,24 @@ function ThemeDrawer(): ReactNode {
           />
         </label>
       </div>
-    </div>
+      <label className="ink-theme-field ink-language-mode">
+        <span>{t('style.languageMode')}</span>
+        <select
+          data-testid="locale-mode"
+          className="ink-input ink-select-sm"
+          value={localeMode}
+          onChange={(event) => updateDoc((draft) => {
+            draft.settings.localeMode = event.target.value as 'auto' | 'zh' | 'en';
+          })}
+        >
+          <option value="auto">{t('style.languageAuto')}</option>
+          <option value="zh">{t('documentLanguage.zh')}</option>
+          <option value="en">{t('documentLanguage.en')}</option>
+        </select>
+        <small>{t('style.languageHint')}</small>
+      </label>
+      </div>
+    </>
   );
 }
 

@@ -146,6 +146,7 @@ export async function translateResume(
   const now = new Date().toISOString();
   next.meta = { id: newId(), createdAt: now, updatedAt: now };
   next.settings.locale = targetLocale;
+  next.settings.localeMode = 'auto';
   next.basics.name = parsed.data.basics.name;
   if (parsed.data.basics.headline === undefined) delete next.basics.headline;
   else next.basics.headline = parsed.data.basics.headline;

@@ -229,6 +229,14 @@ export function formatEntryLine(entry: Entry, locale: 'zh' | 'en'): string | nul
     kvs.push([escapeField(k), escapeField(entry.extra[k]!)]);
   }
 
+  // Segment 1 is the bare secondary slot. If the first emitted key/value is
+  // custom extra data, reserve that slot explicitly so the parser does not
+  // reinterpret `key: value` as a secondary field.
+  if (segs.length === 1 && kvs.length > 0) {
+    const firstKey = unescapeField(kvs[0]![0]).trim().toLowerCase();
+    if (!RESERVED_KEYS.has(firstKey)) segs.push('');
+  }
+
   for (const [k, v] of kvs) {
     // url/tags/start/end/role keys are emitted raw; tags/extra already escaped.
     const value = k === 'url' || k === 'start' || k === 'end' || k === 'role' ? escapeField(v) : v;

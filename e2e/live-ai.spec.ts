@@ -25,12 +25,12 @@ test('production DeepSeek import, polish, auth error and secret lifecycle', asyn
   await page.getByTestId('ai-import-replace').click();
   await expect(page.getByTestId('basics-name')).toHaveValue(/李明/);
 
-  await page.getByTestId('document-language').selectOption('zh');
+  await expect(page.getByTestId('document-language')).toContainText('中文');
   const documentCount = await page.locator('.ink-doc-item').count();
   await page.getByTestId('ai-translate-open').click();
   await page.getByTestId('ai-translate-run').click();
   await expect(page.locator('.ink-doc-item')).toHaveCount(documentCount + 1, { timeout: 120_000 });
-  await expect(page.getByTestId('document-language')).toHaveValue('en');
+  await expect(page.getByTestId('document-language')).toContainText('English');
   await expect(page.getByTestId('basics-name')).not.toHaveValue('李明');
 
   await page.getByTestId('ai-import').click();
@@ -63,7 +63,7 @@ test('production DeepSeek import, polish, auth error and secret lifecycle', asyn
   await page.getByTestId('ai-import-text').fill('Invalid key check');
   await page.getByTestId('ai-import-convert').click();
   await expect(page.getByText('Invalid API key or no permission. Check the key in AI settings.')).toBeVisible({ timeout: 30_000 });
-  await page.getByRole('button', { name: 'close' }).click();
+  await page.getByRole('button', { name: 'Close' }).click();
 
   await page.getByTestId('ai-settings').click();
   await page.getByRole('button', { name: 'Clear config' }).click();

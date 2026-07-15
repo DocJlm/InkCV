@@ -368,6 +368,9 @@ function readSettings(fm: Record<string, unknown>, warnings: MdWarning[]): Setti
     const texTemplate = asStr(rec['texTemplate']);
     if (texTemplate !== undefined) clean['texTemplate'] = texTemplate;
     if (rec['locale'] === 'zh' || rec['locale'] === 'en') clean['locale'] = rec['locale'];
+    if (rec['localeMode'] === 'auto' || rec['localeMode'] === 'zh' || rec['localeMode'] === 'en') {
+      clean['localeMode'] = rec['localeMode'];
+    }
     clean['page'] = pickValid(rec['page'], PageSettingsSchema.shape as never);
     clean['tokens'] = pickValid(rec['tokens'], ThemeTokensSchema.shape as never);
   } else if (raw !== undefined) {

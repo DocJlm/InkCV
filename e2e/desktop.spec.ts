@@ -21,22 +21,25 @@ test('form, Markdown, persistence, templates and color presets stay in sync', as
   await page.getByTestId('mode-form').click();
   await expect(page.getByTestId('basics-name')).toHaveValue('Round Trip Candidate');
 
-  for (const template of ['onyx', 'lapis', 'classic', 'minimal-ats', 'compact-tech', 'section-rail', 'timeline', 'profile']) {
+  await page.getByTestId('template-picker').click();
+  await expect(page.locator('.ink-template-grid').getByRole('option')).toHaveCount(4);
+  await page.keyboard.press('Escape');
+
+  for (const template of ['onyx', 'lapis', 'minimal-ats', 'compact-tech']) {
     await page.getByTestId('template-picker').click();
     await page.getByTestId(`template-${template}`).click();
     await expect(page.getByTestId('template-picker')).toHaveAttribute('aria-expanded', 'false');
     await waitForPreview(page);
   }
 
-  const originalDocumentLanguage = await page.getByTestId('document-language').inputValue();
-  const interfaceSwitch = originalDocumentLanguage === 'zh' ? 'interface-language-en' : 'interface-language-zh';
-  await page.getByTestId(interfaceSwitch).click();
+  await expect(page.getByTestId('document-language')).toContainText('English');
+  await page.getByTestId('interface-language-zh').click();
   await expect(page.getByTestId('basics-name')).toHaveValue('Round Trip Candidate');
-  await expect(page.getByTestId('document-language')).toHaveValue(originalDocumentLanguage);
-  const changedDocumentLanguage = originalDocumentLanguage === 'zh' ? 'en' : 'zh';
-  await page.getByTestId('document-language').selectOption(changedDocumentLanguage);
+  await expect(page.getByTestId('document-language')).toContainText('English');
+  await page.getByTestId('style-toggle').click();
+  await page.getByTestId('locale-mode').selectOption('zh');
   await expect(page.getByTestId('basics-name')).toHaveValue('Round Trip Candidate');
-  await expect(page.getByTestId('document-language')).toHaveValue(changedDocumentLanguage);
+  await expect(page.getByTestId('document-language')).toContainText('中文');
 
   const zoom = page.getByTestId('preview-zoom');
   await expect(zoom).toHaveValue('fit');
@@ -49,7 +52,6 @@ test('form, Markdown, persistence, templates and color presets stay in sync', as
   await page.keyboard.press('Escape');
   await expect(page.locator('.ink-preview')).not.toHaveClass(/ink-preview-fullscreen/);
 
-  await page.getByTestId('style-toggle').click();
   await page.getByTestId('color-blue').click();
   await expect(page.getByTestId('color-blue')).toHaveAttribute('aria-pressed', 'true');
   await page.getByTestId('color-black').click();
@@ -122,8 +124,7 @@ test('the local AI proxy rejects missing credentials without caching', async ({ 
 test('AI translation creates a validated copy and never overwrites the source', async ({ page }) => {
   await openFreshApp(page);
   await page.getByTestId('basics-name').fill('Source Candidate');
-  const sourceLocale = await page.getByTestId('document-language').inputValue();
-  const targetLocale = sourceLocale === 'zh' ? 'en' : 'zh';
+  await expect(page.getByTestId('document-language')).toContainText('English');
 
   await page.getByTestId('ai-settings').click();
   await page.getByTestId('ai-api-key').fill('test-only-key');
@@ -134,10 +135,18 @@ test('AI translation creates a validated copy and never overwrites the source', 
     const body = route.request().postDataJSON() as { options: { user: string } };
     requestBody = body.options.user;
     const payload = JSON.parse(body.options.user) as { basics: unknown; sections: unknown };
+    const translateStrings = (value: unknown, key = ''): unknown => {
+      if (typeof value === 'string') return key === 'id' ? value : '中文内容';
+      if (Array.isArray(value)) return value.map((item) => translateStrings(item));
+      if (value && typeof value === 'object') {
+        return Object.fromEntries(Object.entries(value).map(([childKey, child]) => [childKey, translateStrings(child, childKey)]));
+      }
+      return value;
+    };
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ text: JSON.stringify({ basics: payload.basics, sections: payload.sections }) }),
+      body: JSON.stringify({ text: JSON.stringify(translateStrings({ basics: payload.basics, sections: payload.sections })) }),
     });
   });
 
@@ -146,12 +155,39 @@ test('AI translation creates a validated copy and never overwrites the source', 
   await page.getByTestId('ai-translate-open').click();
   await page.getByTestId('ai-translate-run').click();
   await expect(sourceItems).toHaveCount(2);
-  await expect(page.getByTestId('document-language')).toHaveValue(targetLocale);
-  await expect(page.getByTestId('basics-name')).toHaveValue('Source Candidate');
+  await expect(page.getByTestId('document-language')).toContainText('中文');
+  await expect(page.getByTestId('basics-name')).toHaveValue('中文内容');
   expect(requestBody).not.toContain('limo@example.com');
   expect(requestBody).not.toContain('2018-09');
 
   await sourceItems.last().click();
-  await expect(page.getByTestId('document-language')).toHaveValue(sourceLocale);
+  await expect(page.getByTestId('document-language')).toContainText('English');
   await expect(page.getByTestId('basics-name')).toHaveValue('Source Candidate');
+});
+
+test('workspace splitters support pointer, keyboard, reset and responsive bands', async ({ page }) => {
+  await openFreshApp(page);
+  const rail = page.locator('.ink-workspace-splitter-rail');
+  const editor = page.locator('.ink-workspace-splitter-editor');
+  await expect(rail).toBeVisible();
+  await rail.focus();
+  const before = Number(await rail.getAttribute('aria-valuenow'));
+  await page.keyboard.press('Shift+ArrowRight');
+  await expect(rail).toHaveAttribute('aria-valuenow', String(before + 40));
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('inkcv.workspaceLayout.v1'))).not.toBeNull();
+  await rail.dblclick();
+  await expect(rail).toHaveAttribute('aria-valuenow', '224');
+
+  const box = await editor.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.move(box!.x + 3, box!.y + 30);
+  await page.mouse.down();
+  await page.mouse.move(box!.x + 43, box!.y + 30);
+  await page.mouse.up();
+
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await expect(rail).toBeHidden();
+  await expect(editor).toBeVisible();
+  await page.setViewportSize({ width: 899, height: 900 });
+  await expect(editor).toBeHidden();
 });

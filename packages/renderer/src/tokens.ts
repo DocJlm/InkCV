@@ -1,15 +1,11 @@
 import type { Settings } from '../../core/src/schema';
-import { fontFamilyFor, SERIF_FAMILY } from './fonts';
+import { fontFamilyFor } from './fonts';
 
 export type TemplateProfile =
   | 'onyx'
   | 'lapis'
-  | 'classic'
   | 'minimal-ats'
-  | 'compact-tech'
-  | 'section-rail'
-  | 'timeline'
-  | 'profile';
+  | 'compact-tech';
 
 export interface ResolvedTheme {
   profile: TemplateProfile;
@@ -62,12 +58,9 @@ export interface ResolvedTheme {
     headerAlign: 'left' | 'center';
     sectionRule: 'bottom' | 'trailing';
     secondaryPlacement: 'inline' | 'below';
-    headerVariant: 'plain' | 'rule' | 'band' | 'profile';
-    sectionVariant: 'standard' | 'rail' | 'boxed';
-    entryVariant: 'standard' | 'date-rail' | 'timeline';
+    headerVariant: 'plain' | 'rule';
+    sectionVariant: 'standard' | 'boxed';
     bulletGlyph: '•' | '–' | '▪';
-    sectionRailWidth: number;
-    dateRailWidth: number;
   };
 }
 
@@ -94,10 +87,7 @@ interface ProfileSpec {
   secondaryPlacement: 'inline' | 'below';
   headerVariant: ResolvedTheme['layout']['headerVariant'];
   sectionVariant: ResolvedTheme['layout']['sectionVariant'];
-  entryVariant: ResolvedTheme['layout']['entryVariant'];
   bulletGlyph: ResolvedTheme['layout']['bulletGlyph'];
-  sectionRailWidth: number;
-  dateRailWidth: number;
 }
 
 const PROFILE_SPECS: Record<TemplateProfile, ProfileSpec> = {
@@ -122,8 +112,7 @@ const PROFILE_SPECS: Record<TemplateProfile, ProfileSpec> = {
     headerAlign: 'left',
     sectionRule: 'bottom',
     secondaryPlacement: 'inline',
-    headerVariant: 'rule', sectionVariant: 'standard', entryVariant: 'standard', bulletGlyph: '•',
-    sectionRailWidth: 0, dateRailWidth: 0,
+    headerVariant: 'rule', sectionVariant: 'standard', bulletGlyph: '•',
   },
   lapis: {
     name: 2.05,
@@ -146,32 +135,7 @@ const PROFILE_SPECS: Record<TemplateProfile, ProfileSpec> = {
     headerAlign: 'center',
     sectionRule: 'trailing',
     secondaryPlacement: 'inline',
-    headerVariant: 'plain', sectionVariant: 'standard', entryVariant: 'standard', bulletGlyph: '▪',
-    sectionRailWidth: 0, dateRailWidth: 0,
-  },
-  classic: {
-    name: 2.45,
-    headline: 1.05,
-    sectionTitle: 1.28,
-    small: 0.84,
-    header: 14,
-    section: 14,
-    entry: 7.5,
-    bullet: 2.5,
-    afterHeadline: 3.5,
-    titlePad: 3,
-    meta: 2.5,
-    paragraph: 2.5,
-    bulletMark: 1.4,
-    photoGap: 12,
-    rule: 0.9,
-    photoSize: 6.2,
-    photoRadius: 3.1,
-    headerAlign: 'center',
-    sectionRule: 'bottom',
-    secondaryPlacement: 'below',
-    headerVariant: 'plain', sectionVariant: 'standard', entryVariant: 'standard', bulletGlyph: '•',
-    sectionRailWidth: 0, dateRailWidth: 0,
+    headerVariant: 'plain', sectionVariant: 'standard', bulletGlyph: '▪',
   },
   'minimal-ats': {
     name: 2,
@@ -194,8 +158,7 @@ const PROFILE_SPECS: Record<TemplateProfile, ProfileSpec> = {
     headerAlign: 'left',
     sectionRule: 'bottom',
     secondaryPlacement: 'below',
-    headerVariant: 'plain', sectionVariant: 'standard', entryVariant: 'standard', bulletGlyph: '–',
-    sectionRailWidth: 0, dateRailWidth: 0,
+    headerVariant: 'plain', sectionVariant: 'standard', bulletGlyph: '–',
   },
   'compact-tech': {
     name: 2.05, headline: 1.02, sectionTitle: 1.08, small: 0.8,
@@ -203,35 +166,7 @@ const PROFILE_SPECS: Record<TemplateProfile, ProfileSpec> = {
     titlePad: 1.6, meta: 1.5, paragraph: 1.6, bulletMark: 1.2, photoGap: 8,
     rule: 2.4, photoSize: 5.5, photoRadius: 0,
     headerAlign: 'left', sectionRule: 'bottom', secondaryPlacement: 'inline',
-    headerVariant: 'rule', sectionVariant: 'boxed', entryVariant: 'standard', bulletGlyph: '▪',
-    sectionRailWidth: 0, dateRailWidth: 0,
-  },
-  'section-rail': {
-    name: 2.35, headline: 1.05, sectionTitle: 1.02, small: 0.82,
-    header: 13, section: 11, entry: 6, bullet: 2, afterHeadline: 2.8,
-    titlePad: 2, meta: 2, paragraph: 2, bulletMark: 1.3, photoGap: 11,
-    rule: 0.8, photoSize: 6, photoRadius: 0.4,
-    headerAlign: 'left', sectionRule: 'trailing', secondaryPlacement: 'below',
-    headerVariant: 'plain', sectionVariant: 'rail', entryVariant: 'standard', bulletGlyph: '–',
-    sectionRailWidth: 11, dateRailWidth: 0,
-  },
-  timeline: {
-    name: 2.2, headline: 1.06, sectionTitle: 1.12, small: 0.8,
-    header: 11, section: 11, entry: 7, bullet: 2, afterHeadline: 2.5,
-    titlePad: 2, meta: 2, paragraph: 2, bulletMark: 1.25, photoGap: 10,
-    rule: 1, photoSize: 5.8, photoRadius: 2.9,
-    headerAlign: 'left', sectionRule: 'bottom', secondaryPlacement: 'inline',
-    headerVariant: 'plain', sectionVariant: 'standard', entryVariant: 'timeline', bulletGlyph: '•',
-    sectionRailWidth: 0, dateRailWidth: 10.5,
-  },
-  profile: {
-    name: 2.55, headline: 1.12, sectionTitle: 1.13, small: 0.84,
-    header: 15, section: 12, entry: 6.5, bullet: 2.2, afterHeadline: 3,
-    titlePad: 2.5, meta: 2.2, paragraph: 2.2, bulletMark: 1.35, photoGap: 12,
-    rule: 0.8, photoSize: 7.6, photoRadius: 0.5,
-    headerAlign: 'left', sectionRule: 'trailing', secondaryPlacement: 'below',
-    headerVariant: 'profile', sectionVariant: 'standard', entryVariant: 'date-rail', bulletGlyph: '▪',
-    sectionRailWidth: 0, dateRailWidth: 12,
+    headerVariant: 'rule', sectionVariant: 'boxed', bulletGlyph: '▪',
   },
 };
 
@@ -286,7 +221,7 @@ export function resolveTheme(
       margin: settings.page.margin * MM_TO_PT,
     },
     fontFamily: fontFamilyFor(t),
-    displayFontFamily: profile === 'classic' ? SERIF_FAMILY : fontFamilyFor(t),
+    displayFontFamily: fontFamilyFor(t),
     color: {
       text: t.textColor,
       accent: t.accentColor,
@@ -328,10 +263,7 @@ export function resolveTheme(
       secondaryPlacement: spec.secondaryPlacement,
       headerVariant: spec.headerVariant,
       sectionVariant: spec.sectionVariant,
-      entryVariant: spec.entryVariant,
       bulletGlyph: spec.bulletGlyph,
-      sectionRailWidth: base * spec.sectionRailWidth,
-      dateRailWidth: base * spec.dateRailWidth,
     },
   };
 }

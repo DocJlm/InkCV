@@ -9,7 +9,7 @@ import {
   translateResume,
   type AiConfig,
 } from '@inkcv/ai';
-import { isFreeform, type ResumeDoc } from '@inkcv/core';
+import { isFreeform, resolveResumeLocale, type ResumeDoc } from '@inkcv/core';
 import { useAppServices } from '../services';
 import { useEditorStore } from '../store';
 import { Modal, IconSparkles } from '../primitives';
@@ -153,7 +153,7 @@ export function AiTranslateModal({
   const { t } = useTranslation();
   const { aiCredentials, aiTransport } = useAppServices();
   const errText = useAiErrorText();
-  const targetLocale = doc.settings.locale === 'zh' ? 'en' : 'zh';
+  const targetLocale = resolveResumeLocale(doc) === 'zh' ? 'en' : 'zh';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -364,7 +364,7 @@ export function AiPolishModal({
       const out = await polishBullets(cfg, {
         bullets: original,
         role: entry?.secondary ?? '',
-        locale: doc.settings.locale,
+        locale: resolveResumeLocale(doc),
       }, aiTransport);
       setPolished(out);
     } catch (err) {

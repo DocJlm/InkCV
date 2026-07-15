@@ -1,7 +1,7 @@
 # InkCV（墨简）— 开源简历制作工具实施计划
 
 > v0.3 补充：中文新建文档默认青石，英文默认玄墨；既有文档不迁移。黑色预设为
-> `#1a1a1a`，蓝色预设为 `#2f5c8f` + `#1a1a1a`。八款模板均走 `compileResume()`。
+> `#1a1a1a`，蓝色预设为 `#2f5c8f` + `#1a1a1a`。四款模板均走 `compileResume()`。
 > 响应式规则为 ≥1280px 三栏、900–1279px 编辑/预览双栏加简历抽屉、<900px
 > “编辑 / 预览”双标签手机工作台。AI 配置持久化非敏感 profile；Web Key 只在内存，
 > Tauri Key 优先进入系统凭据库。模板排版参考与署名见 README。
@@ -23,12 +23,13 @@
 
 ## 2026-07 产品闭环补充
 
-- **PDF 模板**：`onyx`（现代单栏）、`lapis`（中文紧凑）、`classic`（居中经典）、`minimal-ats`（线性机器友好）、`compact-tech`（技术密排）、`section-rail`（侧标网格）、`timeline`（日期轨道）、`profile`（名片页眉）。八款全部通过 `compileResume()` 渲染并只消费集中解析的 `ResolvedTheme`。
+- **PDF 模板**：`onyx`（现代单栏）、`lapis`（中文紧凑）、`minimal-ats`（线性机器友好）、`compact-tech`（技术密排）。四款均使用 react-pdf 页面结构，只共享日期、Markdown、照片与分页原语，并只消费集中解析的 `ResolvedTheme`；旧文档引用已删除模板时安全回退到 `onyx`。
 - **颜色策略**：新建和首跑示例显式使用黑色预设（强调色/正文色 `#1a1a1a`）；蓝色预设为 `#2f5c8f` + `#1a1a1a`；保留自定义取色。旧文档不迁移，切换模板不覆盖字体、颜色、字号、行高、间距或页边距。
-- **语言模型**：界面语言只影响 UI；简历语言只影响内容语境与排版规则。AI 翻译仅发送带稳定 ID 的可翻译字符串，校验 ID/数量/结构后创建新文档，源文档与联系方式、照片、日期、URL 和主题保持不变。
+- **语言模型**：界面语言只影响 UI；简历排版语言默认由可见正文自动识别，`localeMode` 可在高级样式中覆盖为中文或英文。识别排除联系方式、URL、日期、照片与元数据。AI 翻译仅发送带稳定 ID 的可翻译字符串，校验 ID/数量/结构后创建新文档，源文档与联系方式、照片、日期、URL 和主题保持不变。
 - **预览缩放**：默认通过 `ResizeObserver` 适合可用宽度；100% 按 96 CSS DPI 显示 PDF 点尺寸，缩放仅重新栅格化已编译字节，支持 50%–200% 与全屏。
-- **模板画廊**：桌面 4×2、中屏 2×4、手机双列，使用 8 款 × 中英文共 16 张由真实 PDF 首页面生成的缩略图，并按简历语言选图。
-- **响应式边界**：≥1280px 保持三栏；900-1279px 将简历列表改为抽屉并保留编辑/预览双栏；<900px 使用完整的“编辑 / 预览”双标签手机工作台，设置与导出通过移动端面板进入。
+- **模板画廊**：桌面四列、中屏与手机双列，使用 4 款 × 中英文共 8 张由真实 PDF 首页面生成的缩略图，并按简历语言选图。
+- **响应式边界**：≥1280px 三栏通过两条可访问分隔线调整宽度；900-1279px 将简历列表改为抽屉并保留编辑/预览分隔线；<900px 使用完整的“编辑 / 预览”双标签手机工作台。布局偏好保存于 `inkcv.workspaceLayout.v1`，不进入 ResumeDoc 或备份。
+- **设置面板**：桌面样式设置为预览内右侧抽屉，手机为底部面板；打开设置不会向下挤压 PDF。LaTeX 模板选择属于导出动作，放入导出菜单。
 - **参考与原创边界**：借鉴 [LapisCV](https://github.com/BingyanStudio/LapisCV) 的中文排版/主题变量和 [billryan/resume](https://github.com/billryan/resume) 的经典层级；不复用其 HTML/CSS 或 XeLaTeX 渲染路径。
 
 ## 关键技术决策（调研支撑）
@@ -53,7 +54,7 @@ packages/
 apps/
   web/         Vite SPA，IndexedDB 存储，部署 GitHub Pages/Vercel
   desktop/     Tauri 2 壳：原生文件打开/保存、API key 存 OS keychain
-templates/     内置模板包（8 款独立布局）
+templates/     内置模板包（4 款布局）
 ```
 
 最关键文件：`packages/core/src/schema.ts`、`packages/core/src/markdown/{parser,serializer}.ts`、`packages/renderer/src/pdfWorker.ts`、`packages/renderer/src/templates/`、`packages/exporters/src/tex.ts`。
@@ -66,8 +67,8 @@ templates/     内置模板包（8 款独立布局）
 - **M3 UI**：表单编辑器（分 section 增删排序、可见性开关）⇋ CodeMirror md 编辑器双模式切换；主题调节面板；IndexedDB 自动保存 + 多简历管理；界面 i18n（zh/en）；首次打开加载示例简历（中英各一）。
 - **M4 导出**：PDF 下载、.md 导出、.tex 导出（两款 Mustache 模板起步）；桌面端走原生保存对话框。
 - **M5 AI**：设置页 BYO Key（Web 仅当前内存会话、桌面存系统凭据库）；「粘贴任意文本 → 结构化简历」导入向导；一键润色 bullets。
-- **M6 模板扩充（已完成）**：8 款内置模板、黑蓝预设和 16 张真实缩略图画廊。
-- **M9 v0.3 语言与预览（已完成）**：界面/简历语言解耦、AI 翻译副本、适宽/真实 100%/全屏 PDF 预览。
+- **M6 模板收敛（已完成）**：4 款内置模板、黑蓝预设和 8 张真实缩略图画廊。
+- **M9 v0.3 语言与预览（已完成）**：自动语言识别与手动排版覆盖、AI 翻译副本、适宽/真实 100%/全屏 PDF 预览、VS Code 式双分隔线和响应式样式抽屉。
 - **M7 桌面打包**：Tauri 三平台构建 + GitHub Releases 自动发版工作流。
 - **M8 开源发布件**：中英双语 README（在线 Demo 链接置顶 + GIF 演示）、截图、issue 模板（防 billryan 式垃圾 issue）、CONTRIBUTING、示例简历库。
 

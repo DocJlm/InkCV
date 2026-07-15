@@ -11,6 +11,7 @@
  * not support `basics.photo`. `hasPhoto` is ignored.
  */
 import { Entry, PRESENT, ResumeDoc, Section } from '../../core/src/schema';
+import { resolveResumeLocale } from '../../core/src/language';
 import { escapeLatex, mdInlineToLatex } from './latexEscape';
 
 export interface TexBullet {
@@ -174,7 +175,7 @@ function buildSection(section: Section, isZh: boolean): TexSection {
 
 /** Build the LaTeX view model from a resume document. */
 export function buildTexViewModel(doc: ResumeDoc): TexViewModel {
-  const isZh = doc.settings.locale === 'zh';
+  const isZh = resolveResumeLocale(doc) === 'zh';
   // ctex must be included whenever the CONTENT contains CJK, not just when the
   // locale is zh — otherwise XeLaTeX renders CJK as missing glyphs.
   const hasCjk = isZh || /[　-〿㐀-鿿豈-﫿]/.test(JSON.stringify(doc));

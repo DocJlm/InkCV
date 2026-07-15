@@ -1,5 +1,6 @@
 import * as YAML from 'yaml';
 import { ResumeDoc, isFreeform } from '../schema';
+import { resolveResumeLocale } from '../language';
 import { escapeFreeformLine } from './escape';
 import { formatEntryLine } from './entryLine';
 
@@ -16,6 +17,7 @@ import { formatEntryLine } from './entryLine';
  */
 export function serializeResumeToMarkdown(doc: ResumeDoc): string {
   const lines: string[] = ['---', stringifyFrontMatter(doc), '---'];
+  const locale = resolveResumeLocale(doc);
 
   for (const section of doc.sections) {
     lines.push('', `## ${section.title}`.trimEnd());
@@ -29,7 +31,7 @@ export function serializeResumeToMarkdown(doc: ResumeDoc): string {
       continue;
     }
     section.entries.forEach((entry, idx) => {
-      const head = formatEntryLine(entry, doc.settings.locale);
+      const head = formatEntryLine(entry, locale);
       if (head !== null) {
         lines.push('', `### ${head}`.trimEnd());
       } else if (idx > 0 || entry.bullets.length === 0) {
@@ -74,11 +76,12 @@ function stringifyFrontMatter(doc: ResumeDoc): string {
       ...(s.visible ? {} : { visible: false }),
     }));
   }
-  const { template, texTemplate, locale, page, tokens } = doc.settings;
+  const { template, texTemplate, locale, localeMode, page, tokens } = doc.settings;
   fm.settings = {
     template,
     texTemplate,
     locale,
+    localeMode,
     page: { size: page.size, margin: page.margin },
     tokens: {
       fontFamily: tokens.fontFamily,

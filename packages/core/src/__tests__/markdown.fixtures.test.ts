@@ -116,6 +116,19 @@ describe('entry line grammar', () => {
     expect(e.extra['_seg3']).toBe('乱七八糟的东西');
     expect(e.unknownSegments).toBe(1);
   });
+
+  it('round-trips an entry whose only heading data is extra metadata', () => {
+    const line = formatEntryLine({
+      id: 'e-extra',
+      tags: [],
+      bullets: [],
+      visible: true,
+      extra: { a: 'a' },
+    }, 'en')!;
+    const parsed = parseEntryLine(line);
+    expect(parsed.secondary).toBeUndefined();
+    expect(parsed.extra).toEqual({ a: 'a' });
+  });
 });
 
 describe('forgiving parsing of hand-written markdown', () => {
@@ -246,7 +259,7 @@ describe('settings preservation', () => {
     const doc = sampleResume('zh', NOW);
     const customized = {
       ...doc,
-      settings: { ...doc.settings, template: 'classic', tokens: { ...doc.settings.tokens, fontSize: 12 } },
+      settings: { ...doc.settings, template: 'minimal-ats', tokens: { ...doc.settings.tokens, fontSize: 12 } },
     };
     const { doc: next } = applyMarkdownToDoc('# 新简历\n\n## 技能\n- React\n', customized, { now: NOW });
     expect(next.settings).toEqual(customized.settings);

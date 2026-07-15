@@ -8,6 +8,7 @@ import {
   type ReactNode,
   type TextareaHTMLAttributes,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAppServices } from './services';
 
 // ---------------------------------------------------------------------------
@@ -121,17 +122,39 @@ export function Modal(props: {
   footer?: ReactNode;
   wide?: boolean;
 }): ReactNode {
+  const { t } = useTranslation();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
+    returnFocusRef.current = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') props.onClose();
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = getFocusable(dialogRef.current);
+      if (focusable.length === 0) return;
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [props]);
+    const frame = requestAnimationFrame(() => getFocusable(dialogRef.current)[0]?.focus());
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('keydown', onKey);
+      returnFocusRef.current?.focus();
+    };
+  }, [props.onClose]);
 
   return (
     <div className="ink-modal-backdrop" onMouseDown={props.onClose} role="presentation">
       <div
+        ref={dialogRef}
         className={`ink-modal${props.wide ? ' ink-modal-wide' : ''}`}
         onMouseDown={(e) => e.stopPropagation()}
         role="dialog"
@@ -140,7 +163,7 @@ export function Modal(props: {
       >
         <header className="ink-modal-head">
           <h2>{props.title}</h2>
-          <button className="ink-icon-btn" onClick={props.onClose} aria-label="close">
+          <button className="ink-icon-btn" onClick={props.onClose} aria-label={t('common.close')}>
             <IconClose />
           </button>
         </header>
@@ -170,6 +193,7 @@ export function DropdownMenu(props: {
 }): ReactNode {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -177,11 +201,16 @@ export function DropdownMenu(props: {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
     };
     window.addEventListener('mousedown', onDown);
     window.addEventListener('keydown', onKey);
+    const frame = requestAnimationFrame(() => rootRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus());
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener('mousedown', onDown);
       window.removeEventListener('keydown', onKey);
     };
@@ -189,9 +218,27 @@ export function DropdownMenu(props: {
 
   return (
     <div className="ink-menu-root" ref={rootRef}>
-      {props.trigger(() => setOpen((v) => !v), open)}
+      {props.trigger(() => {
+        triggerRef.current = document.activeElement as HTMLElement | null;
+        setOpen((v) => !v);
+      }, open)}
       {open && (
-        <div className={`ink-menu ink-menu-${props.align ?? 'left'}`} role="menu">
+        <div
+          className={`ink-menu ink-menu-${props.align ?? 'left'}`}
+          role="menu"
+          onKeyDown={(event) => {
+            const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'));
+            const current = items.indexOf(document.activeElement as HTMLButtonElement);
+            let next = current;
+            if (event.key === 'ArrowDown') next = (current + 1) % items.length;
+            else if (event.key === 'ArrowUp') next = (current - 1 + items.length) % items.length;
+            else if (event.key === 'Home') next = 0;
+            else if (event.key === 'End') next = items.length - 1;
+            else return;
+            event.preventDefault();
+            items[next]?.focus();
+          }}
+        >
           {props.items.map((item) => (
             <button
               key={item.key}
@@ -201,6 +248,7 @@ export function DropdownMenu(props: {
               onClick={() => {
                 setOpen(false);
                 item.onSelect();
+                requestAnimationFrame(() => triggerRef.current?.focus());
               }}
             >
               {item.icon && <span className="ink-menu-icon">{item.icon}</span>}
@@ -211,4 +259,11 @@ export function DropdownMenu(props: {
       )}
     </div>
   );
+}
+
+function getFocusable(root: HTMLElement | null): HTMLElement[] {
+  if (!root) return [];
+  return Array.from(root.querySelectorAll<HTMLElement>(
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+  )).filter((element) => !element.hasAttribute('hidden'));
 }

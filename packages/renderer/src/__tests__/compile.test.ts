@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { RESUME_COLOR_PRESETS, cloneDoc, newId } from '../../../core/src/schema';
 import { sampleResume } from '../../../core/src/samples';
 import { compileResume } from '../compile';
-import { templates } from '../templates';
+import { getTemplate, templates } from '../templates';
 import { resolveTheme } from '../tokens';
 
 const rendererRoot = fileURLToPath(new URL('../../', import.meta.url));
@@ -23,6 +23,15 @@ beforeAll(() => {
 }, 120_000);
 
 describe('compileResume', () => {
+  it('registers only the four supported templates', () => {
+    expect(templates.map((template) => template.id)).toEqual([
+      'onyx',
+      'lapis',
+      'minimal-ats',
+      'compact-tech',
+    ]);
+  });
+
   it('compiles the zh sample into an embedded-font PDF', async () => {
     const doc = sampleResume('zh');
     const bytes = await compileResume(doc);
@@ -50,6 +59,12 @@ describe('compileResume', () => {
     doc.settings.template = 'this-template-does-not-exist';
     const bytes = await compileResume(doc);
     expect(pdfHeader(bytes)).toBe('%PDF-');
+  });
+
+  it('falls back to onyx for removed template ids', () => {
+    for (const id of ['classic', 'section-rail', 'timeline', 'profile']) {
+      expect(getTemplate(id).id).toBe('onyx');
+    }
   });
 
   it('renders a bold CJK bullet without throwing', async () => {
@@ -109,6 +124,14 @@ describe('compileResume', () => {
       const bytes = await compileResume(doc);
       expect(pdfHeader(bytes)).toBe('%PDF-');
       expect(bytes.byteLength).toBeGreaterThan(0);
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      const loading = pdfjs.getDocument({ data: bytes.slice(), useSystemFonts: true });
+      const pdf = await loading.promise;
+      try {
+        expect(pdf.numPages).toBeGreaterThan(1);
+      } finally {
+        await loading.destroy();
+      }
     });
   }
 
@@ -119,7 +142,6 @@ describe('compileResume', () => {
     const layoutSignatures = resolved.map((theme) => JSON.stringify({
       header: theme.layout.headerVariant,
       section: theme.layout.sectionVariant,
-      entry: theme.layout.entryVariant,
       align: theme.layout.headerAlign,
       rule: theme.layout.sectionRule,
       name: theme.size.name,
@@ -129,7 +151,7 @@ describe('compileResume', () => {
     expect(resolved.every((theme) => theme.color.accent === RESUME_COLOR_PRESETS.black.accentColor)).toBe(true);
   });
 
-  it('produces distinct name, section and date coordinates for all eight layouts', async () => {
+  it('produces distinct name, section and date coordinates for all four layouts', async () => {
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
     const signatures: string[] = [];
     for (const template of templates) {
@@ -144,7 +166,7 @@ describe('compileResume', () => {
           'str' in item && 'transform' in item,
         );
         const position = (text: string) => {
-          const item = items.find((candidate) => candidate.str.includes(text));
+          const item = items.find((candidate) => candidate.str.toLocaleLowerCase().includes(text.toLocaleLowerCase()));
           expect(item, `${template.id} should render ${text}`).toBeDefined();
           return `${Math.round(item!.transform[4] ?? 0)},${Math.round(item!.transform[5] ?? 0)}`;
         };
@@ -155,4 +177,5 @@ describe('compileResume', () => {
     }
     expect(new Set(signatures).size).toBe(templates.length);
   });
+
 });

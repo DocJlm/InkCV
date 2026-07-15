@@ -159,6 +159,8 @@ export const SettingsSchema = z.object({
   texTemplate: z.string().default('moderncv-like'),
   /** Content locale: affects date words (至今/Present) and renderer clamps. */
   locale: z.enum(['zh', 'en']).default('zh'),
+  /** Auto-detect visible resume content, or explicitly override formatting. */
+  localeMode: z.enum(['auto', 'zh', 'en']).default('auto'),
   tokens: ThemeTokensSchema.default({}),
   page: PageSettingsSchema.default({}),
 });
@@ -201,6 +203,7 @@ export function createEmptyResume(locale: 'zh' | 'en' = 'zh', now?: string): Res
     ],
     settings: {
       locale,
+      localeMode: 'auto',
       template: locale === 'zh' ? 'lapis' : 'onyx',
       tokens: RESUME_COLOR_PRESETS.black,
     },

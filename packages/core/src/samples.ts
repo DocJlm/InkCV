@@ -124,7 +124,7 @@ function sampleZh(ts: string): ResumeDoc {
         markdown: '热爱开源，相信**好工具应该让人第一眼就会用**。业余维护两个 npm 包，累计下载 50k+。',
       },
     ],
-    settings: { locale: 'zh', template: 'lapis', tokens: RESUME_COLOR_PRESETS.black },
+    settings: { locale: 'zh', localeMode: 'auto', template: 'lapis', tokens: RESUME_COLOR_PRESETS.black },
   });
 }
 
@@ -230,6 +230,6 @@ function sampleEn(ts: string): ResumeDoc {
         ],
       },
     ],
-    settings: { locale: 'en', template: 'onyx', tokens: RESUME_COLOR_PRESETS.black },
+    settings: { locale: 'en', localeMode: 'auto', template: 'onyx', tokens: RESUME_COLOR_PRESETS.black },
   });
 }

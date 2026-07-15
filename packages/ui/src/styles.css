@@ -93,7 +93,10 @@ textarea {
 
 .ink-app {
   display: grid;
-  grid-template-columns: 224px minmax(420px, 1fr) minmax(380px, 45vw);
+  grid-template-columns:
+    var(--ink-rail-width, 224px) 6px
+    minmax(420px, var(--ink-desktop-editor-width, 760px)) 6px
+    minmax(380px, 1fr);
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -302,6 +305,7 @@ textarea.ink-input {
 /* ---- Left rail ---------------------------------------------------------- */
 
 .ink-rail {
+  grid-column: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -503,6 +507,7 @@ a.ink-btn {
 /* ---- Middle pane -------------------------------------------------------- */
 
 .ink-middle {
+  grid-column: 3;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -811,11 +816,44 @@ a.ink-btn {
 /* ---- Preview pane ------------------------------------------------------- */
 
 .ink-preview {
+  grid-column: 5;
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
   background: var(--bg);
+}
+
+.ink-workspace-splitter {
+  position: relative;
+  z-index: 12;
+  width: 6px;
+  min-width: 6px;
+  cursor: col-resize;
+  touch-action: none;
+  background: var(--bg);
+  outline: none;
+}
+.ink-workspace-splitter::after {
+  content: '';
+  position: absolute;
+  inset: 0 2px;
+  background: var(--border);
+  transition: background 0.12s, inset 0.12s;
+}
+.ink-workspace-splitter:hover::after,
+.ink-workspace-splitter:focus-visible::after,
+.ink-is-resizing .ink-workspace-splitter::after {
+  inset-inline: 1px;
+  background: var(--accent);
+}
+.ink-workspace-splitter-rail { grid-column: 2; }
+.ink-workspace-splitter-editor { grid-column: 4; }
+.ink-is-resizing,
+.ink-is-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
 }
 .ink-preview-fullscreen {
   position: fixed;
@@ -1018,10 +1056,42 @@ a.ink-btn {
 /* ---- Theme drawer ------------------------------------------------------- */
 
 .ink-theme-drawer {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel-2);
+  position: absolute;
+  inset: 49px 0 0 auto;
+  z-index: 62;
+  width: min(320px, 92%);
+  padding: 0 16px 20px;
+  overflow-y: auto;
+  border-left: 1px solid var(--border-strong);
+  background: var(--panel);
+  box-shadow: var(--shadow-md);
 }
+.ink-theme-backdrop {
+  position: absolute;
+  inset: 49px 0 0;
+  z-index: 61;
+  border: 0;
+  background: rgba(17, 18, 20, 0.08);
+}
+.ink-theme-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  margin: 0 -16px 14px;
+  padding: 0 12px 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.ink-preview-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ink-preview-more { display: none; }
 .ink-theme-row {
   display: flex;
   flex-wrap: wrap;
@@ -1114,6 +1184,15 @@ a.ink-btn {
   text-align: right;
   color: var(--text);
   font-variant-numeric: tabular-nums;
+}
+.ink-language-mode {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.ink-language-mode small {
+  color: var(--text-faint);
+  line-height: 1.45;
 }
 
 /* ---- Modals ------------------------------------------------------------- */
@@ -1292,8 +1371,12 @@ a.ink-btn {
 
 @media (min-width: 900px) and (max-width: 1279px) {
   .ink-app {
-    grid-template-columns: minmax(360px, 1fr) minmax(340px, 46vw);
+    grid-template-columns: minmax(360px, var(--ink-medium-editor-width, 520px)) 6px minmax(340px, 1fr);
   }
+  .ink-middle { grid-column: 1; }
+  .ink-workspace-splitter-rail { display: none; }
+  .ink-workspace-splitter-editor { grid-column: 2; }
+  .ink-preview { grid-column: 3; }
   .ink-rail {
     position: fixed;
     inset: 0 auto 0 0;
@@ -1350,6 +1433,7 @@ a.ink-btn {
     grid-row: 1;
     height: 100%;
   }
+  .ink-workspace-splitter { display: none; }
   .ink-app.ink-mobile-edit .ink-preview,
   .ink-app.ink-mobile-preview .ink-middle {
     display: none;
@@ -1417,6 +1501,12 @@ a.ink-btn {
     flex-wrap: wrap;
     padding: 8px 10px;
   }
+  .ink-preview-toolbar button,
+  .ink-preview-toolbar select { min-height: 44px; }
+  .ink-preview-toolbar .ink-icon-btn { min-width: 44px; }
+  .ink-preview-secondary { display: none; }
+  .ink-preview-more { display: inline-flex; }
+  .ink-preview-more .ink-menu-item { min-width: 144px; }
   .ink-preview-scroll { padding: 12px 8px; }
   .ink-preview-pages { width: var(--ink-mobile-preview-width); }
   .ink-template-popover {
@@ -1432,7 +1522,18 @@ a.ink-btn {
   .ink-template-tags > span:not(:last-child) { display: none; }
   .ink-preview-actual { display: none; }
   .ink-document-language { margin-left: 8px; }
-  .ink-theme-drawer { max-height: 55dvh; overflow-y: auto; }
+  .ink-theme-backdrop { inset: 0; background: rgba(0, 0, 0, 0.28); }
+  .ink-theme-drawer {
+    position: absolute;
+    inset: auto 0 0;
+    width: 100%;
+    max-height: 70dvh;
+    overflow-y: auto;
+    border: 1px solid var(--border-strong);
+    border-bottom: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
   .ink-modal-backdrop {
     align-items: flex-end;
     padding: 0;

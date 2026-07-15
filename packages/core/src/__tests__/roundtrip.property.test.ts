@@ -113,9 +113,10 @@ const arbSection = fc.oneof(
 );
 
 const arbSettings = fc.record({
-  template: fc.constantFrom('onyx', 'classic'),
+  template: fc.constantFrom('onyx', 'lapis', 'minimal-ats', 'compact-tech'),
   texTemplate: fc.constantFrom('moderncv-like', 'simple-cv'),
   locale: fc.constantFrom('zh' as const, 'en' as const),
+  localeMode: fc.constantFrom('auto' as const, 'zh' as const, 'en' as const),
   page: fc.record({
     size: fc.constantFrom('A4' as const, 'Letter' as const),
     margin: fc.integer({ min: 8, max: 30 }),

@@ -338,7 +338,7 @@ function SectionCard({
   return (
     <section className={`ink-card${section.visible ? '' : ' ink-hidden-section'}`}>
       <header className="ink-card-head ink-section-head">
-        <button className="ink-collapse" onClick={() => setOpen((v) => !v)} aria-label="toggle">
+        <button className="ink-collapse" onClick={() => setOpen((v) => !v)} aria-label={t(open ? 'common.collapse' : 'common.expand')}>
           {open ? <IconChevronDown /> : <IconChevronRight />}
         </button>
         <input
@@ -563,9 +563,10 @@ function swap<T>(arr: T[], i: number, j: number): void {
 }
 
 function CardHeader({ open, onToggle, title }: { open: boolean; onToggle: () => void; title: string }): ReactNode {
+  const { t } = useTranslation();
   return (
     <header className="ink-card-head">
-      <button className="ink-collapse" onClick={onToggle} aria-label="toggle">
+      <button className="ink-collapse" onClick={onToggle} aria-label={t(open ? 'common.collapse' : 'common.expand')}>
         {open ? <IconChevronDown /> : <IconChevronRight />}
       </button>
       <h3 className="ink-card-title">{title}</h3>
@@ -610,11 +611,12 @@ export function IconBtn({
 }
 
 function VisibilityToggle({ visible, onToggle }: { visible: boolean; onToggle: () => void }): ReactNode {
+  const { t } = useTranslation();
   return (
     <button
       className={`ink-icon-btn ink-vis${visible ? '' : ' off'}`}
-      title={visible ? 'hide' : 'show'}
-      aria-label={visible ? 'hide' : 'show'}
+      title={t(visible ? 'common.hide' : 'common.show')}
+      aria-label={t(visible ? 'common.hide' : 'common.show')}
       onClick={onToggle}
       type="button"
     >

@@ -2,6 +2,7 @@ export * from './schema';
 export * from './samples';
 export * from './migrate';
 export * from './backup';
+export * from './language';
 export * from './markdown/serialize';
 export * from './markdown/parse';
 export * from './markdown/reconcile';

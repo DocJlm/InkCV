@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { pdf, renderToBuffer } from '@react-pdf/renderer';
 import type { ResumeDoc } from '../../core/src/schema';
+import { resolveResumeLocale } from '../../core/src/language';
 import { isNodeEnv, registerFonts } from './fonts';
 import { getTemplate } from './templates';
 import { resolveTheme } from './tokens';
@@ -20,7 +21,8 @@ export async function compileResume(doc: ResumeDoc): Promise<Uint8Array> {
 
   const descriptor = getTemplate(doc.settings.template);
   const { component: Template } = descriptor;
-  const theme = resolveTheme(doc.settings, descriptor.profile);
+  const locale = resolveResumeLocale(doc);
+  const theme = resolveTheme({ ...doc.settings, locale }, descriptor.profile);
   // The template renders a <Document>; cast to the DocumentProps element type
   // react-pdf's render entry points expect (custom wrapper components aren't in
   // their signature).

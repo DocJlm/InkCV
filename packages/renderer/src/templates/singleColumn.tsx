@@ -24,14 +24,16 @@ export function buildTemplateStyles(t: ResolvedTheme) {
       alignItems: 'flex-start',
       marginBottom: t.space.header,
       paddingBottom: t.layout.headerVariant === 'rule' ? t.space.titlePad * 1.6 : 0,
+      borderTopWidth: 0,
+      borderTopColor: t.color.accent,
       borderBottomWidth: t.layout.headerVariant === 'rule' ? t.space.rule : 0,
       borderBottomColor: t.color.accent,
-      borderLeftWidth: t.layout.headerVariant === 'profile' ? t.space.rule * 4 : 0,
+      borderLeftWidth: t.profile === 'onyx' ? t.space.rule * 4 : 0,
       borderLeftColor: t.color.accent,
-      paddingTop: t.layout.headerVariant === 'profile' ? t.space.titlePad * 2 : 0,
-      paddingLeft: t.layout.headerVariant === 'profile' ? t.space.titlePad * 2 : 0,
-      paddingRight: t.layout.headerVariant === 'profile' ? t.space.titlePad * 2 : 0,
-      ...(t.layout.headerVariant === 'profile' ? { backgroundColor: t.color.subtle } : {}),
+      paddingTop: t.profile === 'onyx' ? t.space.titlePad * 2 : 0,
+      paddingLeft: t.profile === 'onyx' ? t.space.titlePad * 2 : 0,
+      paddingRight: t.profile === 'onyx' ? t.space.titlePad * 2 : 0,
+      ...(t.profile === 'onyx' ? { backgroundColor: t.color.subtle } : {}),
     },
     headerMain: {
       flexGrow: 1,
@@ -85,16 +87,6 @@ export function buildTemplateStyles(t: ResolvedTheme) {
     section: {
       marginBottom: t.space.section,
       position: 'relative',
-      paddingLeft: t.layout.sectionVariant === 'rail' ? t.layout.sectionRailWidth : 0,
-    },
-    sectionRailTitle: {
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      width: t.layout.sectionRailWidth - t.space.titlePad,
-      borderTopWidth: t.space.rule * 2,
-      borderTopColor: t.color.accent,
-      paddingTop: t.space.titlePad,
     },
     sectionTitleBoxed: {
       backgroundColor: t.color.subtle,
@@ -106,7 +98,7 @@ export function buildTemplateStyles(t: ResolvedTheme) {
       marginBottom: t.space.entry,
     },
     sectionTitleBottom: {
-      borderBottomWidth: t.space.rule,
+      borderBottomWidth: t.profile === 'minimal-ats' ? 0 : t.space.rule,
       borderBottomColor: t.color.accent,
       paddingBottom: t.space.titlePad,
       marginBottom: t.space.entry,
@@ -127,39 +119,10 @@ export function buildTemplateStyles(t: ResolvedTheme) {
       fontWeight: 700,
       color: t.profile === 'minimal-ats' ? t.color.text : t.color.accent,
       lineHeight: t.lineHeight.title,
+      textTransform: t.profile === 'minimal-ats' ? 'uppercase' : 'none',
     },
     entry: {
       marginBottom: t.space.entry,
-    },
-    entryRail: {
-      position: 'relative',
-      flexDirection: 'row',
-      marginBottom: t.space.entry,
-    },
-    entryRailDate: {
-      width: t.layout.dateRailWidth,
-      paddingRight: t.space.titlePad,
-      fontSize: t.size.small,
-      color: t.color.muted,
-      lineHeight: t.lineHeight.body,
-    },
-    entryRailDateTimeline: {
-      borderRightWidth: t.space.rule,
-      borderRightColor: t.color.accent,
-    },
-    entryRailBody: {
-      flexGrow: 1,
-      flexShrink: 1,
-      paddingLeft: t.space.titlePad * 1.6,
-    },
-    timelineDot: {
-      position: 'absolute',
-      left: t.layout.dateRailWidth - t.space.rule * 2.4,
-      top: t.size.small * 0.2,
-      width: t.space.rule * 3.6,
-      height: t.space.rule * 3.6,
-      borderRadius: t.space.rule * 1.8,
-      backgroundColor: t.color.accent,
     },
     entryHeadRow: {
       flexDirection: 'row',
@@ -228,7 +191,7 @@ function metaLine(entry: Entry): string {
     .join(' | ');
 }
 
-function EntryView({
+export function TemplateEntry({
   entry,
   entryKey,
   styles,
@@ -253,7 +216,7 @@ function EntryView({
             {!secondaryBelow && entry.primary && entry.secondary ? '  ' : ''}
             {!secondaryBelow && entry.secondary ? <Text style={styles.entrySecondary}>{entry.secondary}</Text> : null}
           </Text>
-          {dates.length > 0 && theme.layout.entryVariant === 'standard' ? <Text style={styles.entryDates}>{dates}</Text> : null}
+          {dates.length > 0 ? <Text style={styles.entryDates}>{dates}</Text> : null}
         </View>
       ) : null}
 
@@ -263,7 +226,7 @@ function EntryView({
       {entry.bullets.length > 0 ? (
         <View style={styles.bulletList}>
           {entry.bullets.map((bullet, index) => (
-            <View key={`${entryKey}-b${index}`} style={styles.bulletRow} wrap={false}>
+            <View key={`${entryKey}-b${index}`} style={styles.bulletRow}>
               <Text style={styles.bulletMark}>{theme.layout.bulletGlyph}</Text>
               <Text style={styles.bulletText}>{renderInline(bullet, `${entryKey}-b${index}`)}</Text>
             </View>
@@ -273,17 +236,6 @@ function EntryView({
     </>
   );
 
-  if (theme.layout.entryVariant !== 'standard') {
-    const timeline = theme.layout.entryVariant === 'timeline';
-    return (
-      <View style={styles.entryRail} wrap={false}>
-        <Text style={timeline ? [styles.entryRailDate, styles.entryRailDateTimeline] : styles.entryRailDate}>{dates}</Text>
-        {timeline ? <View style={styles.timelineDot} /> : null}
-        <View style={styles.entryRailBody}>{body}</View>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.entry}>
       {body}
@@ -291,7 +243,7 @@ function EntryView({
   );
 }
 
-function SectionTitle({
+export function TemplateSectionTitle({
   title,
   styles,
   theme,
@@ -300,22 +252,19 @@ function SectionTitle({
   styles: TemplateStyles;
   theme: ResolvedTheme;
 }): React.ReactElement {
-  if (theme.layout.sectionVariant === 'rail') {
-    return <View style={styles.sectionRailTitle} wrap={false}><Text style={styles.sectionTitle}>{title}</Text></View>;
-  }
   if (theme.layout.sectionVariant === 'boxed') {
-    return <View style={styles.sectionTitleBoxed} wrap={false}><Text style={styles.sectionTitle}>{title}</Text></View>;
+    return <View style={styles.sectionTitleBoxed} wrap={false} minPresenceAhead={theme.size.base * 4}><Text style={styles.sectionTitle}>{title}</Text></View>;
   }
   if (theme.layout.sectionRule === 'trailing') {
     return (
-      <View style={styles.sectionTitleTrailing} wrap={false}>
+      <View style={styles.sectionTitleTrailing} wrap={false} minPresenceAhead={theme.size.base * 4}>
         <Text style={styles.sectionTitle}>{title}</Text>
         <View style={styles.trailingRule} />
       </View>
     );
   }
   return (
-    <View style={styles.sectionTitleBottom} wrap={false}>
+    <View style={styles.sectionTitleBottom} wrap={false} minPresenceAhead={theme.size.base * 4}>
       <Text style={styles.sectionTitle}>{title}</Text>
     </View>
   );
@@ -332,9 +281,9 @@ function StructuredSectionView({
 }): React.ReactElement {
   return (
     <View style={styles.section}>
-      <SectionTitle title={section.title} styles={styles} theme={theme} />
+      <TemplateSectionTitle title={section.title} styles={styles} theme={theme} />
       {section.entries.filter((entry) => entry.visible).map((entry) => (
-        <EntryView key={entry.id} entry={entry} entryKey={entry.id} styles={styles} theme={theme} />
+        <TemplateEntry key={entry.id} entry={entry} entryKey={entry.id} styles={styles} theme={theme} />
       ))}
     </View>
   );
@@ -357,13 +306,13 @@ function FreeformSectionView({
   };
   return (
     <View style={styles.section}>
-      <SectionTitle title={section.title} styles={styles} theme={theme} />
+      <TemplateSectionTitle title={section.title} styles={styles} theme={theme} />
       {renderFreeform(section.markdown, freeformStyles)}
     </View>
   );
 }
 
-function Header({
+export function TemplateHeader({
   doc,
   styles,
   theme,
@@ -398,6 +347,21 @@ function Header({
   );
 }
 
+export function TemplateSection({
+  section,
+  theme,
+  styles,
+}: {
+  section: ResumeDoc['sections'][number];
+  theme: ResolvedTheme;
+  styles: TemplateStyles;
+}): React.ReactElement {
+  return isFreeform(section)
+    ? <FreeformSectionView section={section} styles={styles} theme={theme} />
+    : <StructuredSectionView section={section} styles={styles} theme={theme} />;
+}
+
+/** @deprecated New templates should compose TemplateHeader and TemplateSection directly. */
 export function TemplatePageContents({
   doc,
   theme,
@@ -409,13 +373,9 @@ export function TemplatePageContents({
 }): React.ReactElement {
   return (
     <>
-      <Header doc={doc} styles={styles} theme={theme} />
+      <TemplateHeader doc={doc} styles={styles} theme={theme} />
       {doc.sections.filter((section) => section.visible).map((section) =>
-        isFreeform(section) ? (
-          <FreeformSectionView key={section.id} section={section} styles={styles} theme={theme} />
-        ) : (
-          <StructuredSectionView key={section.id} section={section} styles={styles} theme={theme} />
-        ),
+        <TemplateSection key={section.id} section={section} styles={styles} theme={theme} />,
       )}
     </>
   );
