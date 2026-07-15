@@ -9,5 +9,8 @@ apps/desktop/src-tauri/target/
 .vite/
 packages/renderer/assets/fonts/
 .playwright-mcp/
+playwright-report/
+test-results/
+.playwright/
 apps/web/.output/
 .codex-dev.*.log

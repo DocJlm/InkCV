@@ -9,9 +9,18 @@
     "dev": "pnpm --filter @inkcv/web dev",
     "build": "pnpm -r --if-present build",
     "test": "pnpm -r --if-present test",
-    "typecheck": "pnpm -r --if-present typecheck"
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test:e2e": "playwright test",
+    "test:e2e:chromium": "playwright test --project=desktop-chromium --project=android-chromium",
+    "test:e2e:webkit": "playwright test --project=iphone-webkit",
+    "test:e2e:live-ai": "playwright test e2e/live-ai.spec.ts --project=desktop-chromium",
+    "assets:release": "node scripts/capture-release-assets.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/pngjs": "^6.0.5",
+    "gifenc": "^1.0.3",
+    "pngjs": "^7.0.0",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   }

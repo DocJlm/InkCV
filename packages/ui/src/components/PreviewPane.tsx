@@ -159,6 +159,7 @@ export function PreviewPane(): ReactNode {
         <div className="ink-spacer" />
 
         <button
+          data-testid="style-toggle"
           className={`ink-btn ink-btn-sm${styleOpen ? ' active' : ''}`}
           onClick={() => setStyleOpen((v) => !v)}
         >
@@ -281,6 +282,7 @@ function TemplateGallery(): ReactNode {
               const preview = TEMPLATE_PREVIEWS[template.id][zh ? 'zh' : 'en'];
               return (
                 <button
+                  data-testid={`template-${template.id}`}
                   key={template.id}
                   className={`ink-template-card${selected ? ' active' : ''}`}
                   role="option"
@@ -367,10 +369,11 @@ function ExportMenu({ isPreviewFresh }: { isPreviewFresh: () => boolean }): Reac
       items={items}
       trigger={(open) => (
         <div className="ink-export-wrap">
-          <button className="ink-btn ink-btn-sm ink-btn-primary" onClick={open}>
+          <button data-testid="export-menu" className="ink-btn ink-btn-sm ink-btn-primary" onClick={open}>
             <IconDownload /> {t('preview.export')}
           </button>
           <select
+            data-testid="tex-template"
             className="ink-input ink-select-sm ink-tex-select"
             value={texTemplate}
             title={t('export.texTemplate')}
@@ -449,6 +452,7 @@ function ThemeDrawer(): ReactNode {
           const preset = RESUME_COLOR_PRESETS[id];
           return (
             <button
+              data-testid={`color-${id}`}
               key={id}
               className={`ink-color-preset${activePreset === id ? ' active' : ''}`}
               aria-pressed={activePreset === id}

@@ -114,6 +114,7 @@ function BasicsCard({ doc, updateDoc }: { doc: ResumeDoc; updateDoc: Mutate }): 
         <div className="ink-card-body">
           <Field label={t('basics.name')}>
             <input
+              data-testid="basics-name"
               className="ink-input"
               value={b.name}
               placeholder={t('basics.namePlaceholder')}
@@ -122,6 +123,7 @@ function BasicsCard({ doc, updateDoc }: { doc: ResumeDoc; updateDoc: Mutate }): 
           </Field>
           <Field label={t('basics.headline')}>
             <input
+              data-testid="basics-headline"
               className="ink-input"
               value={b.headline ?? ''}
               placeholder={t('basics.headlinePlaceholder')}
@@ -134,6 +136,7 @@ function BasicsCard({ doc, updateDoc }: { doc: ResumeDoc; updateDoc: Mutate }): 
               {b.photo?.src && <img className="ink-photo-thumb" src={b.photo.src} alt="" />}
               <div className="ink-row ink-photo-controls">
               <input
+                data-testid="photo-url"
                 className="ink-input"
                 value={b.photo?.src ?? ''}
                 placeholder={t('basics.photoPlaceholder')}
@@ -146,6 +149,7 @@ function BasicsCard({ doc, updateDoc }: { doc: ResumeDoc; updateDoc: Mutate }): 
                 }
               />
               <button
+                data-testid="photo-upload"
                 type="button"
                 className="ink-btn ink-btn-sm"
                 onClick={() => {
@@ -156,7 +160,7 @@ function BasicsCard({ doc, updateDoc }: { doc: ResumeDoc; updateDoc: Mutate }): 
                   }).catch((error: unknown) => {
                     setPhotoError(error instanceof Error && error.message === 'file_too_large'
                       ? t('basics.photoFileTooLarge')
-                      : t('basics.photoDecodeFailed'));
+                      : t('basics.photoDecodeError'));
                   });
                 }}
               >
@@ -527,7 +531,7 @@ function EntryEditor({
 
       <div className="ink-entry-foot">
         {aiOn && entry.bullets.length > 0 && (
-          <button className="ink-btn ink-btn-sm ink-btn-ai" onClick={onPolish}>
+          <button data-testid="ai-polish-open" className="ink-btn ink-btn-sm ink-btn-ai" onClick={onPolish}>
             <IconSparkles /> {t('entry.aiPolish')}
           </button>
         )}

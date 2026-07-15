@@ -71,7 +71,7 @@ export function LeftRail({
         <DropdownMenu
           items={newItems}
           trigger={(open) => (
-            <button className="ink-btn ink-btn-primary ink-btn-block" onClick={open}>
+            <button data-testid="new-resume" className="ink-btn ink-btn-primary ink-btn-block" onClick={open}>
               <IconPlus /> {t('nav.new')}
             </button>
           )}
@@ -123,7 +123,7 @@ export function LeftRail({
             EN
           </button>
         </div>
-        <button className={`ink-btn ink-btn-ghost ink-btn-sm ink-btn-block${aiOn ? ' ai-on' : ''}`} onClick={onOpenAiSettings}>
+        <button data-testid="ai-settings" className={`ink-btn ink-btn-ghost ink-btn-sm ink-btn-block${aiOn ? ' ai-on' : ''}`} onClick={onOpenAiSettings}>
           <IconSparkles /> {t('nav.aiSettings')}
           {aiOn && <span className="ink-dot" aria-hidden="true" />}
         </button>
