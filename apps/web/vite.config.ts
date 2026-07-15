@@ -13,7 +13,9 @@ export default defineConfig(({ mode }) => ({
   // esbuild still compiles their JSX; they just don't hot-refresh.
   plugins: [
     react({ exclude: [/node_modules/, /packages\/renderer\//] }),
-    ...(mode === 'test' ? [] : [nitro()]),
+    // Nitro v3 alpha does not currently add rootDir to its route scan list.
+    // Keep the explicit scan directory so routes/api works in dev and builds.
+    ...(mode === 'test' ? [] : [nitro({ scanDirs: ['.'] })]),
   ],
   base: './',
   server: {

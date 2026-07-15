@@ -1,6 +1,6 @@
 import { defineHandler } from 'nitro/h3';
 import { AiError, chatComplete, createFetchAiTransport, type AiConfig, type ChatOptions } from '@inkcv/ai';
-import { configuredHosts, isAllowedOrigin, validateProviderUrl } from '../../src/aiProxyPolicy';
+import { configuredHosts, isAllowedOrigin, validateProviderUrl } from '../../../src/aiProxyPolicy';
 
 const MAX_REQUEST_BYTES = 128 * 1024;
 

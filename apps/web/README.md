@@ -11,5 +11,7 @@ pnpm dev
 pnpm --filter @inkcv/web build
 ```
 
-The same Nitro route serves `POST /api/ai/chat` locally and as a stateless
-Vercel Function in production.
+The same Nitro route in `routes/api/ai/chat.post.ts` serves
+`POST /api/ai/chat` locally and as a stateless Vercel Function in production.
+The route intentionally lives under `routes/api` rather than top-level `api`
+so Vercel does not compile it a second time as a standalone function.
