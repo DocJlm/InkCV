@@ -4,3 +4,4 @@ export * from './client';
 export * from './jsonUtil';
 export * from './extract';
 export * from './polish';
+export * from './translate';

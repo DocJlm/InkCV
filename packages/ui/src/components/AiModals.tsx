@@ -6,6 +6,7 @@ import {
   textToResumeDraft,
   draftToDoc,
   polishBullets,
+  translateResume,
   type AiConfig,
 } from '@inkcv/ai';
 import { isFreeform, type ResumeDoc } from '@inkcv/core';
@@ -133,6 +134,67 @@ export function AiSettingsModal({ onClose }: { onClose: () => void }): ReactNode
         <span className="ink-field-label">{t('ai.model')}</span>
         <input data-testid="ai-model" className="ink-input" value={model} onChange={(e) => setModel(e.target.value)} placeholder={preset?.defaultModel} />
       </label>
+    </Modal>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Full resume translation
+
+export function AiTranslateModal({
+  doc,
+  onClose,
+  onCreateCopy,
+}: {
+  doc: ResumeDoc;
+  onClose: () => void;
+  onCreateCopy: (translated: ResumeDoc) => void | Promise<void>;
+}): ReactNode {
+  const { t } = useTranslation();
+  const { aiCredentials, aiTransport } = useAppServices();
+  const errText = useAiErrorText();
+  const targetLocale = doc.settings.locale === 'zh' ? 'en' : 'zh';
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async () => {
+    const cfg = aiCredentials.get();
+    if (!cfg) {
+      setError(t('ai.notConfigured'));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const translated = await translateResume(cfg, doc, targetLocale, aiTransport);
+      await onCreateCopy(translated);
+      onClose();
+    } catch (value) {
+      setError(errText(value));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={t('ai.translateTitle')}
+      onClose={onClose}
+      footer={
+        <>
+          <div className="ink-spacer" />
+          <button className="ink-btn ink-btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
+          <button data-testid="ai-translate-run" className="ink-btn ink-btn-primary" onClick={() => void run()} disabled={busy}>
+            {busy ? <><span className="ink-spinner" /> {t('ai.translating')}</> : <><IconSparkles /> {t('ai.translateCreate')}</>}
+          </button>
+        </>
+      }
+    >
+      <p className="ink-modal-intro">
+        {t('ai.translateIntro', { language: t(targetLocale === 'zh' ? 'documentLanguage.zh' : 'documentLanguage.en') })}
+      </p>
+      <div className="ink-translation-safe-note">{t('ai.translateSafe')}</div>
+      {error && <div className="ink-inline-error">{error}</div>}
     </Modal>
   );
 }

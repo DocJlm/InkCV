@@ -26,6 +26,7 @@ const en: Record<TranslationKey, string> = {
   'nav.github': 'GitHub',
   'nav.about': 'About InkCV',
   'nav.language': 'Language',
+  'nav.interfaceLanguage': 'Interface',
   'nav.resumes': 'My résumés',
   'nav.openResumes': 'Résumés',
 
@@ -39,6 +40,12 @@ const en: Record<TranslationKey, string> = {
 
   'toolbar.form': 'Form',
   'toolbar.markdown': 'Markdown',
+
+  'documentLanguage.label': 'Résumé language',
+  'documentLanguage.zh': '中文',
+  'documentLanguage.en': 'English',
+  'documentLanguage.formatOnly': 'Changes date words and typography only; existing content is not translated',
+  'documentLanguage.translate': 'AI translation copy',
 
   'basics.title': 'Basics',
   'basics.name': 'Name',
@@ -123,6 +130,12 @@ const en: Record<TranslationKey, string> = {
 
   'preview.template': 'Template',
   'preview.zoom': 'Zoom',
+  'preview.zoomOut': 'Zoom out',
+  'preview.zoomIn': 'Zoom in',
+  'preview.fit': 'Fit width',
+  'preview.actualSize': '100%',
+  'preview.fullscreen': 'Full screen',
+  'preview.exitFullscreen': 'Exit full screen',
   'preview.pages_one': '{{count}} page',
   'preview.pages_other': '{{count}} pages',
   'preview.compiling': 'Compiling…',
@@ -133,10 +146,20 @@ const en: Record<TranslationKey, string> = {
   'preview.chooseTemplate': 'Choose template',
 
   'templateGallery.title': 'Choose a résumé template',
+  'templateGallery.density.compact': 'Dense',
+  'templateGallery.density.balanced': 'Balanced',
+  'templateGallery.density.spacious': 'Spacious',
+  'templateGallery.photo': 'Photo-forward',
+  'templateGallery.sampleZh': '中文示例',
+  'templateGallery.sampleEn': 'English sample',
   'template.onyx.description': 'Balanced single column with a left-aligned header',
   'template.lapis.description': 'Compact layout with a centered header and extended rules',
   'template.classic.description': 'Traditional typography with prominent section divisions',
   'template.minimalAts.description': 'Clear single column balancing readability and visual hierarchy',
+  'template.compactTech.description': 'Emphasises technology tags and measurable engineering impact',
+  'template.sectionRail.description': 'A narrow section rail keeps the original content order clear',
+  'template.timeline.description': 'Dates form an experience track for seasoned candidates',
+  'template.profile.description': 'A stronger identity and photo header with print-stable body copy',
 
   'export.pdf': 'Export PDF',
   'export.md': 'Export Markdown',
@@ -209,6 +232,11 @@ const en: Record<TranslationKey, string> = {
   'ai.errorGeneric': 'Something went wrong: {{msg}}',
   'ai.notConfigured': 'Configure AI first (“AI settings”, bottom-left).',
   'ai.needBullets': 'This entry has no highlights to polish.',
+  'ai.translateTitle': 'Translate the résumé',
+  'ai.translateIntro': 'Translate this résumé into {{language}} and create a separate copy.',
+  'ai.translateSafe': 'The original stays unchanged. Photos, contacts, URLs, dates and layout settings are not sent to the model.',
+  'ai.translateCreate': 'Translate and create copy',
+  'ai.translating': 'Translating…',
 };
 
 export default en;

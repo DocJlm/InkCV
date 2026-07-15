@@ -199,7 +199,11 @@ export function createEmptyResume(locale: 'zh' | 'en' = 'zh', now?: string): Res
       { id: newId(), kind: 'projects', title: t('项目经历', 'Projects'), visible: true, entries: [] },
       { id: newId(), kind: 'skills', title: t('专业技能', 'Skills'), visible: true, entries: [] },
     ],
-    settings: { locale, tokens: RESUME_COLOR_PRESETS.black },
+    settings: {
+      locale,
+      template: locale === 'zh' ? 'lapis' : 'onyx',
+      tokens: RESUME_COLOR_PRESETS.black,
+    },
   });
 }
 

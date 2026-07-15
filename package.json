@@ -1,6 +1,6 @@
 {
   "name": "inkcv",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "InkCV (墨简) — open-source, local-first resume builder. Form + Markdown dual-mode editing, live PDF preview, exports PDF/.md/.tex.",
   "license": "MIT",

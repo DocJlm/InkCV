@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium, devices } from '@playwright/test';
@@ -147,7 +147,16 @@ try {
     await browser.close();
   }
 } finally {
-  server.kill();
+  if (process.platform === 'win32' && server.pid) {
+    // `server` is cmd.exe on Windows; terminating only the shell leaves Vite
+    // and its open stdio handles alive, so the asset command never exits.
+    spawnSync('taskkill', ['/pid', String(server.pid), '/T', '/F'], {
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+  } else {
+    server.kill();
+  }
 }
 
 console.log('Generated bilingual GIFs and desktop/mobile screenshots in docs/images.');

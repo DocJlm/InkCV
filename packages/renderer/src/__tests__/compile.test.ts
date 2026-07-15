@@ -115,8 +115,44 @@ describe('compileResume', () => {
   it('resolves distinct semantic metrics for every template profile', () => {
     const settings = sampleResume('zh').settings;
     const resolved = templates.map((template) => resolveTheme(settings, template.profile));
-    expect(new Set(resolved.map((theme) => theme.profile)).size).toBe(4);
-    expect(new Set(resolved.map((theme) => theme.size.name)).size).toBe(4);
+    expect(new Set(resolved.map((theme) => theme.profile)).size).toBe(templates.length);
+    const layoutSignatures = resolved.map((theme) => JSON.stringify({
+      header: theme.layout.headerVariant,
+      section: theme.layout.sectionVariant,
+      entry: theme.layout.entryVariant,
+      align: theme.layout.headerAlign,
+      rule: theme.layout.sectionRule,
+      name: theme.size.name,
+      sectionSize: theme.size.sectionTitle,
+    }));
+    expect(new Set(layoutSignatures).size).toBe(templates.length);
     expect(resolved.every((theme) => theme.color.accent === RESUME_COLOR_PRESETS.black.accentColor)).toBe(true);
+  });
+
+  it('produces distinct name, section and date coordinates for all eight layouts', async () => {
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    const signatures: string[] = [];
+    for (const template of templates) {
+      const source = cloneDoc(sampleResume('en'));
+      source.settings.template = template.id;
+      const loading = pdfjs.getDocument({ data: (await compileResume(source)).slice(), useSystemFonts: true });
+      const pdf = await loading.promise;
+      try {
+        const page = await pdf.getPage(1);
+        const content = await page.getTextContent();
+        const items = content.items.filter((item): item is typeof item & { str: string; transform: number[] } =>
+          'str' in item && 'transform' in item,
+        );
+        const position = (text: string) => {
+          const item = items.find((candidate) => candidate.str.includes(text));
+          expect(item, `${template.id} should render ${text}`).toBeDefined();
+          return `${Math.round(item!.transform[4] ?? 0)},${Math.round(item!.transform[5] ?? 0)}`;
+        };
+        signatures.push([position(source.basics.name), position(source.sections[0]!.title), position('2018-09')].join('|'));
+      } finally {
+        await loading.destroy();
+      }
+    }
+    expect(new Set(signatures).size).toBe(templates.length);
   });
 });

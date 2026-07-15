@@ -24,6 +24,7 @@ const zh = {
   'nav.github': 'GitHub',
   'nav.about': '关于 InkCV',
   'nav.language': '语言',
+  'nav.interfaceLanguage': '界面语言',
   'nav.resumes': '我的简历',
   'nav.openResumes': '简历列表',
 
@@ -37,6 +38,12 @@ const zh = {
 
   'toolbar.form': '表单',
   'toolbar.markdown': 'Markdown',
+
+  'documentLanguage.label': '简历语言',
+  'documentLanguage.zh': '中文',
+  'documentLanguage.en': 'English',
+  'documentLanguage.formatOnly': '只改变日期词和排版规则，不会翻译已有内容',
+  'documentLanguage.translate': 'AI 翻译副本',
 
   'basics.title': '基本信息',
   'basics.name': '姓名',
@@ -121,6 +128,12 @@ const zh = {
 
   'preview.template': '模板',
   'preview.zoom': '缩放',
+  'preview.zoomOut': '缩小',
+  'preview.zoomIn': '放大',
+  'preview.fit': '适合宽度',
+  'preview.actualSize': '100%',
+  'preview.fullscreen': '全屏',
+  'preview.exitFullscreen': '退出全屏',
   'preview.pages_one': '{{count}} 页',
   'preview.pages_other': '{{count}} 页',
   'preview.compiling': '编译中…',
@@ -131,10 +144,20 @@ const zh = {
   'preview.chooseTemplate': '选择模板',
 
   'templateGallery.title': '选择简历模板',
+  'templateGallery.density.compact': '高密度',
+  'templateGallery.density.balanced': '均衡',
+  'templateGallery.density.spacious': '舒展',
+  'templateGallery.photo': '照片突出',
+  'templateGallery.sampleZh': '中文示例',
+  'templateGallery.sampleEn': 'English sample',
   'template.onyx.description': '通用单栏，左对齐页眉与清晰分节',
   'template.lapis.description': '紧凑中文排版，居中页眉与延伸分节线',
   'template.classic.description': '经典排版，居中身份信息与醒目分节',
   'template.minimalAts.description': '简洁单栏，兼顾机器读取与视觉层次',
+  'template.compactTech.description': '强化技术标签与成果数字，适合工程师',
+  'template.sectionRail.description': '左侧分节标识，右侧内容保持清晰顺序',
+  'template.timeline.description': '日期形成经历轨道，适合资深候选人',
+  'template.profile.description': '突出个人页眉与照片，正文保持打印稳定',
 
   'export.pdf': '导出 PDF',
   'export.md': '导出 Markdown',
@@ -207,6 +230,11 @@ const zh = {
   'ai.errorGeneric': '出错了：{{msg}}',
   'ai.notConfigured': '请先配置 AI（左下角 “AI 设置”）。',
   'ai.needBullets': '该条目暂无要点可润色。',
+  'ai.translateTitle': '翻译整份简历',
+  'ai.translateIntro': '将当前简历翻译为{{language}}并创建一份新副本。',
+  'ai.translateSafe': '原简历不会被覆盖；照片、联系方式、URL、日期和版式设置不会发送给模型。',
+  'ai.translateCreate': '翻译并创建副本',
+  'ai.translating': '正在翻译…',
 } as const;
 
 export default zh;

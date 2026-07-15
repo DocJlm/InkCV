@@ -40,6 +40,10 @@ export { OnyxTemplate } from './templates/onyx';
 export { LapisTemplate } from './templates/lapis';
 export { ClassicTemplate } from './templates/classic';
 export { MinimalAtsTemplate } from './templates/minimalAts';
+export { CompactTechTemplate } from './templates/compactTech';
+export { SectionRailTemplate } from './templates/sectionRail';
+export { TimelineTemplate } from './templates/timeline';
+export { ProfileTemplate } from './templates/profile';
 
 export { compileResume } from './compile';
 

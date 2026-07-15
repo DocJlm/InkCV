@@ -24,4 +24,4 @@ The bundle is configured for Windows NSIS/MSI, macOS DMG, and Linux AppImage/Deb
 - If Linux has no usable Secret Service, the key remains in memory for the current session and the UI shows a warning.
 - Capabilities are limited in `src-tauri/capabilities/default.json`; CSP remains enabled.
 
-Packages are intentionally unsigned in v0.2. Release checks install or mount each generated package, start the application, and confirm that its process remains alive before publication.
+Packages are intentionally unsigned in v0.3. Release checks install or mount each generated package, start the application, and confirm that its process remains alive before publication.

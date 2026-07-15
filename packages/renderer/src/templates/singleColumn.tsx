@@ -1,12 +1,11 @@
 import * as React from 'react';
-import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+import { Image, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { Entry, FreeformSection, ResumeDoc, StructuredSection } from '../../../core/src/schema';
 import { PRESENT, isFreeform } from '../../../core/src/schema';
 import { type FreeformStyles, renderFreeform, renderInline } from '../inlineMd';
 import type { ResolvedTheme } from '../tokens';
-import type { TemplateProps } from './types';
 
-function buildStyles(t: ResolvedTheme) {
+export function buildTemplateStyles(t: ResolvedTheme) {
   const centered = t.layout.headerAlign === 'center';
   return StyleSheet.create({
     page: {
@@ -24,6 +23,15 @@ function buildStyles(t: ResolvedTheme) {
       flexDirection: 'row',
       alignItems: 'flex-start',
       marginBottom: t.space.header,
+      paddingBottom: t.layout.headerVariant === 'rule' ? t.space.titlePad * 1.6 : 0,
+      borderBottomWidth: t.layout.headerVariant === 'rule' ? t.space.rule : 0,
+      borderBottomColor: t.color.accent,
+      borderLeftWidth: t.layout.headerVariant === 'profile' ? t.space.rule * 4 : 0,
+      borderLeftColor: t.color.accent,
+      paddingTop: t.layout.headerVariant === 'profile' ? t.space.titlePad * 2 : 0,
+      paddingLeft: t.layout.headerVariant === 'profile' ? t.space.titlePad * 2 : 0,
+      paddingRight: t.layout.headerVariant === 'profile' ? t.space.titlePad * 2 : 0,
+      ...(t.layout.headerVariant === 'profile' ? { backgroundColor: t.color.subtle } : {}),
     },
     headerMain: {
       flexGrow: 1,
@@ -37,7 +45,8 @@ function buildStyles(t: ResolvedTheme) {
     name: {
       fontSize: t.size.name,
       fontWeight: 700,
-      color: t.color.text,
+      fontFamily: t.displayFontFamily,
+      color: t.profile === 'compact-tech' ? t.color.accent : t.color.text,
       lineHeight: t.lineHeight.name,
       textAlign: centered ? 'center' : 'left',
     },
@@ -75,6 +84,26 @@ function buildStyles(t: ResolvedTheme) {
     },
     section: {
       marginBottom: t.space.section,
+      position: 'relative',
+      paddingLeft: t.layout.sectionVariant === 'rail' ? t.layout.sectionRailWidth : 0,
+    },
+    sectionRailTitle: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      width: t.layout.sectionRailWidth - t.space.titlePad,
+      borderTopWidth: t.space.rule * 2,
+      borderTopColor: t.color.accent,
+      paddingTop: t.space.titlePad,
+    },
+    sectionTitleBoxed: {
+      backgroundColor: t.color.subtle,
+      borderLeftWidth: t.space.rule,
+      borderLeftColor: t.color.accent,
+      paddingTop: t.space.titlePad,
+      paddingBottom: t.space.titlePad,
+      paddingLeft: t.space.titlePad * 1.6,
+      marginBottom: t.space.entry,
     },
     sectionTitleBottom: {
       borderBottomWidth: t.space.rule,
@@ -96,11 +125,41 @@ function buildStyles(t: ResolvedTheme) {
     sectionTitle: {
       fontSize: t.size.sectionTitle,
       fontWeight: 700,
-      color: t.color.accent,
+      color: t.profile === 'minimal-ats' ? t.color.text : t.color.accent,
       lineHeight: t.lineHeight.title,
     },
     entry: {
       marginBottom: t.space.entry,
+    },
+    entryRail: {
+      position: 'relative',
+      flexDirection: 'row',
+      marginBottom: t.space.entry,
+    },
+    entryRailDate: {
+      width: t.layout.dateRailWidth,
+      paddingRight: t.space.titlePad,
+      fontSize: t.size.small,
+      color: t.color.muted,
+      lineHeight: t.lineHeight.body,
+    },
+    entryRailDateTimeline: {
+      borderRightWidth: t.space.rule,
+      borderRightColor: t.color.accent,
+    },
+    entryRailBody: {
+      flexGrow: 1,
+      flexShrink: 1,
+      paddingLeft: t.space.titlePad * 1.6,
+    },
+    timelineDot: {
+      position: 'absolute',
+      left: t.layout.dateRailWidth - t.space.rule * 2.4,
+      top: t.size.small * 0.2,
+      width: t.space.rule * 3.6,
+      height: t.space.rule * 3.6,
+      borderRadius: t.space.rule * 1.8,
+      backgroundColor: t.color.accent,
     },
     entryHeadRow: {
       flexDirection: 'row',
@@ -154,7 +213,7 @@ function buildStyles(t: ResolvedTheme) {
   });
 }
 
-type Styles = ReturnType<typeof buildStyles>;
+export type TemplateStyles = ReturnType<typeof buildTemplateStyles>;
 
 function dateRange(entry: Entry, t: ResolvedTheme): string {
   const endLabel = entry.end === PRESENT ? t.presentLabel : entry.end;
@@ -177,7 +236,7 @@ function EntryView({
 }: {
   entry: Entry;
   entryKey: string;
-  styles: Styles;
+  styles: TemplateStyles;
   theme: ResolvedTheme;
 }): React.ReactElement {
   const dates = dateRange(entry, theme);
@@ -185,38 +244,49 @@ function EntryView({
   const secondaryBelow = theme.layout.secondaryPlacement === 'below';
   const hasHead = !!entry.primary || (!secondaryBelow && !!entry.secondary) || dates.length > 0;
 
-  return (
-    <View style={styles.entry}>
+  const body = (
+    <>
       {hasHead ? (
         <View style={styles.entryHeadRow} wrap={false}>
           <Text style={styles.entryPrimaryLine}>
             {entry.primary ? <Text style={styles.entryPrimary}>{entry.primary}</Text> : null}
             {!secondaryBelow && entry.primary && entry.secondary ? '  ' : ''}
-            {!secondaryBelow && entry.secondary ? (
-              <Text style={styles.entrySecondary}>{entry.secondary}</Text>
-            ) : null}
+            {!secondaryBelow && entry.secondary ? <Text style={styles.entrySecondary}>{entry.secondary}</Text> : null}
           </Text>
-          {dates.length > 0 ? <Text style={styles.entryDates}>{dates}</Text> : null}
+          {dates.length > 0 && theme.layout.entryVariant === 'standard' ? <Text style={styles.entryDates}>{dates}</Text> : null}
         </View>
       ) : null}
 
-      {secondaryBelow && entry.secondary ? (
-        <Text style={styles.entrySecondaryBelow}>{entry.secondary}</Text>
-      ) : null}
+      {secondaryBelow && entry.secondary ? <Text style={styles.entrySecondaryBelow}>{entry.secondary}</Text> : null}
       {meta.length > 0 ? <Text style={styles.entryMeta}>{meta}</Text> : null}
 
       {entry.bullets.length > 0 ? (
         <View style={styles.bulletList}>
           {entry.bullets.map((bullet, index) => (
             <View key={`${entryKey}-b${index}`} style={styles.bulletRow} wrap={false}>
-              <Text style={styles.bulletMark}>•</Text>
-              <Text style={styles.bulletText}>
-                {renderInline(bullet, `${entryKey}-b${index}`)}
-              </Text>
+              <Text style={styles.bulletMark}>{theme.layout.bulletGlyph}</Text>
+              <Text style={styles.bulletText}>{renderInline(bullet, `${entryKey}-b${index}`)}</Text>
             </View>
           ))}
         </View>
       ) : null}
+    </>
+  );
+
+  if (theme.layout.entryVariant !== 'standard') {
+    const timeline = theme.layout.entryVariant === 'timeline';
+    return (
+      <View style={styles.entryRail} wrap={false}>
+        <Text style={timeline ? [styles.entryRailDate, styles.entryRailDateTimeline] : styles.entryRailDate}>{dates}</Text>
+        {timeline ? <View style={styles.timelineDot} /> : null}
+        <View style={styles.entryRailBody}>{body}</View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.entry}>
+      {body}
     </View>
   );
 }
@@ -227,9 +297,15 @@ function SectionTitle({
   theme,
 }: {
   title: string;
-  styles: Styles;
+  styles: TemplateStyles;
   theme: ResolvedTheme;
 }): React.ReactElement {
+  if (theme.layout.sectionVariant === 'rail') {
+    return <View style={styles.sectionRailTitle} wrap={false}><Text style={styles.sectionTitle}>{title}</Text></View>;
+  }
+  if (theme.layout.sectionVariant === 'boxed') {
+    return <View style={styles.sectionTitleBoxed} wrap={false}><Text style={styles.sectionTitle}>{title}</Text></View>;
+  }
   if (theme.layout.sectionRule === 'trailing') {
     return (
       <View style={styles.sectionTitleTrailing} wrap={false}>
@@ -251,7 +327,7 @@ function StructuredSectionView({
   theme,
 }: {
   section: StructuredSection;
-  styles: Styles;
+  styles: TemplateStyles;
   theme: ResolvedTheme;
 }): React.ReactElement {
   return (
@@ -270,7 +346,7 @@ function FreeformSectionView({
   theme,
 }: {
   section: FreeformSection;
-  styles: Styles;
+  styles: TemplateStyles;
   theme: ResolvedTheme;
 }): React.ReactElement {
   const freeformStyles: FreeformStyles = {
@@ -293,7 +369,7 @@ function Header({
   theme,
 }: {
   doc: ResumeDoc;
-  styles: Styles;
+  styles: TemplateStyles;
   theme: ResolvedTheme;
 }): React.ReactElement {
   const contacts = doc.basics.contacts.filter((contact) => contact.visible).map((contact) => contact.value);
@@ -322,20 +398,25 @@ function Header({
   );
 }
 
-export function SingleColumnTemplate({ doc, theme }: TemplateProps): React.ReactElement {
-  const styles = buildStyles(theme);
+export function TemplatePageContents({
+  doc,
+  theme,
+  styles,
+}: {
+  doc: ResumeDoc;
+  theme: ResolvedTheme;
+  styles: TemplateStyles;
+}): React.ReactElement {
   return (
-    <Document>
-      <Page size={[theme.page.width, theme.page.height]} style={styles.page}>
-        <Header doc={doc} styles={styles} theme={theme} />
-        {doc.sections.filter((section) => section.visible).map((section) =>
-          isFreeform(section) ? (
-            <FreeformSectionView key={section.id} section={section} styles={styles} theme={theme} />
-          ) : (
-            <StructuredSectionView key={section.id} section={section} styles={styles} theme={theme} />
-          ),
-        )}
-      </Page>
-    </Document>
+    <>
+      <Header doc={doc} styles={styles} theme={theme} />
+      {doc.sections.filter((section) => section.visible).map((section) =>
+        isFreeform(section) ? (
+          <FreeformSectionView key={section.id} section={section} styles={styles} theme={theme} />
+        ) : (
+          <StructuredSectionView key={section.id} section={section} styles={styles} theme={theme} />
+        ),
+      )}
+    </>
   );
 }

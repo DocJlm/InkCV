@@ -54,7 +54,7 @@ export function LeftRail({
   const newItems: MenuItem[] = [
     { key: 'zh', label: t('nav.newZh'), onSelect: () => onNew('zh') },
     { key: 'en', label: t('nav.newEn'), onSelect: () => onNew('en') },
-    { key: 'blank', label: t('nav.newBlank'), onSelect: () => onNew('blank') },
+    { key: 'blank', label: t('nav.newBlank'), testId: 'new-blank', onSelect: () => onNew('blank') },
   ];
 
   return (
@@ -115,11 +115,12 @@ export function LeftRail({
       <div className="ink-rail-foot">
         <div className="ink-lang-toggle" role="group" aria-label={t('nav.language')}>
           <IconGlobe />
-          <button className={lang === 'zh' ? 'active' : ''} onClick={() => setLang('zh')}>
+          <span className="ink-lang-label">{t('nav.interfaceLanguage')}</span>
+          <button data-testid="interface-language-zh" className={lang === 'zh' ? 'active' : ''} onClick={() => setLang('zh')}>
             中
           </button>
           <span className="ink-lang-sep">/</span>
-          <button className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')}>
+          <button data-testid="interface-language-en" className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')}>
             EN
           </button>
         </div>
