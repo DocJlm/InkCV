@@ -22,7 +22,7 @@ await visit(root);
 if (bundles.length !== 6) throw new Error(`Expected 6 bundles, found ${bundles.length}.`);
 if (checksums.length !== 6) throw new Error(`Expected 6 checksum files, found ${checksums.length}.`);
 
-const names = bundles.map(basename);
+const names = bundles.map((bundle) => basename(bundle));
 const requirements = [
   [/\.exe$/i, 'Windows NSIS'],
   [/\.msi$/i, 'Windows MSI'],
