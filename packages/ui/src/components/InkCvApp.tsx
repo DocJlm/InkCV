@@ -215,10 +215,10 @@ function InkCvAppInner({ store }: { store: DocStore }): ReactElement {
       <PreviewPane />
 
       <nav className="ink-mobile-nav" aria-label={t('app.name')}>
-        <button className={mobilePane === 'edit' ? 'active' : ''} aria-current={mobilePane === 'edit' ? 'page' : undefined} onClick={() => setMobilePane('edit')}>
+        <button data-testid="mobile-edit" className={mobilePane === 'edit' ? 'active' : ''} aria-current={mobilePane === 'edit' ? 'page' : undefined} onClick={() => setMobilePane('edit')}>
           {t('mobile.edit')}
         </button>
-        <button className={mobilePane === 'preview' ? 'active' : ''} aria-current={mobilePane === 'preview' ? 'page' : undefined} onClick={() => setMobilePane('preview')}>
+        <button data-testid="mobile-preview" className={mobilePane === 'preview' ? 'active' : ''} aria-current={mobilePane === 'preview' ? 'page' : undefined} onClick={() => setMobilePane('preview')}>
           {t('mobile.preview')}
         </button>
       </nav>
@@ -297,7 +297,7 @@ function MiddlePane({ onOpenRail }: { onOpenRail: () => void }): ReactNode {
   return (
     <div className="ink-middle">
       <div className="ink-mode-toolbar">
-        <button className="ink-btn ink-btn-sm ink-rail-toggle" onClick={onOpenRail}>
+        <button data-testid="open-resumes" className="ink-btn ink-btn-sm ink-rail-toggle" onClick={onOpenRail}>
           {t('nav.openResumes')}
         </button>
         <div className="ink-mode-toggle" role="tablist">

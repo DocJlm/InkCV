@@ -4,13 +4,13 @@
 >
 > 本地优先的开源简历工具：表单与 Markdown 双模式编辑、真实 PDF 预览、四款模板、自带 Key 的 AI、备份与完整导出。
 
-[在线版 / Web app](https://inkcv.vercel.app) · [桌面版 / Desktop downloads](https://github.com/DocJlm/InkCV/releases/latest) · [隐私说明 / Privacy](docs/PRIVACY.md) · [参与贡献 / Contributing](CONTRIBUTING.md)
+[在线版 / Web app](https://inkcv.vercel.app) · [桌面版 / Desktop downloads](https://github.com/DocJlm/InkCV/releases/tag/v0.2.0) · [反馈 / Feedback](https://github.com/DocJlm/InkCV/discussions) · [隐私说明 / Privacy](docs/PRIVACY.md) · [参与贡献 / Contributing](CONTRIBUTING.md)
 
 > v0.2 is a public beta. Desktop packages are unsigned; read the installation notes below and verify the included SHA-256 file.
 >
 > v0.2 为公测版本。桌面安装包暂未签名，请阅读下方安装说明并核对随包提供的 SHA-256。
 
-![InkCV 中文界面](docs/images/screenshot-zh.png)
+![InkCV 中文演示：AI 导入、模板配色与导出](docs/images/demo-zh.gif)
 
 ## 中文
 
@@ -23,6 +23,12 @@
 - AI 支持 OpenAI、DeepSeek、Anthropic、Moonshot/Kimi 与自定义 OpenAI-compatible 地址。所有模型名都可编辑。
 - 无账号、无数据库、无云同步。简历保存在当前设备。
 - 手机端提供“编辑 / 预览”完整工作台，桌面端提供 Tauri 原生文件对话框与系统凭据库。
+
+桌面与手机界面：
+
+| 桌面 | 手机 |
+|---|---|
+| ![InkCV 中文桌面界面](docs/images/screenshot-zh.png) | ![InkCV 中文手机界面](docs/images/mobile-zh.png) |
 
 ### AI Key 与隐私
 
@@ -68,12 +74,19 @@ pnpm --filter @inkcv/desktop dev
 
 ### Development and verification
 
+![InkCV English demo: AI import, template styling, and export](docs/images/demo-en.gif)
+
+| Desktop | Mobile |
+|---|---|
+| ![InkCV English desktop workspace](docs/images/screenshot-en.png) | ![InkCV English mobile workspace](docs/images/mobile-en.png) |
+
 ```bash
 pnpm install
 node packages/renderer/scripts/fetch-fonts.mjs
 pnpm test
 pnpm typecheck
 pnpm --filter @inkcv/web build
+pnpm test:e2e
 ```
 
 The monorepo contains `packages/core`, `renderer`, `exporters`, `ai`, and `ui`, plus `apps/web` and `apps/desktop`. Pull requests must preserve Markdown round-trip identity and the single PDF rendering path; see [CONTRIBUTING.md](CONTRIBUTING.md).

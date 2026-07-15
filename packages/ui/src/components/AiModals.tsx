@@ -87,7 +87,7 @@ export function AiSettingsModal({ onClose }: { onClose: () => void }): ReactNode
           <button className="ink-btn ink-btn-ghost" onClick={onClose}>
             {t('common.cancel')}
           </button>
-          <button className="ink-btn ink-btn-primary" onClick={save} disabled={!canSave}>
+          <button data-testid="ai-settings-save" className="ink-btn ink-btn-primary" onClick={save} disabled={!canSave}>
             {t('common.save')}
           </button>
         </>
@@ -102,7 +102,7 @@ export function AiSettingsModal({ onClose }: { onClose: () => void }): ReactNode
 
       <label className="ink-field">
         <span className="ink-field-label">{t('ai.provider')}</span>
-        <select className="ink-input" value={presetId} onChange={(e) => applyPreset(e.target.value)}>
+        <select data-testid="ai-provider" className="ink-input" value={presetId} onChange={(e) => applyPreset(e.target.value)}>
           {PROVIDER_PRESETS.map((p) => (
             <option key={p.id} value={p.id}>
               {p.label}
@@ -113,12 +113,13 @@ export function AiSettingsModal({ onClose }: { onClose: () => void }): ReactNode
 
       <label className="ink-field">
         <span className="ink-field-label">{t('ai.baseUrl')}</span>
-        <input className="ink-input" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://api.example.com/v1" />
+        <input data-testid="ai-base-url" className="ink-input" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://api.example.com/v1" />
       </label>
 
       <label className="ink-field">
         <span className="ink-field-label">{t('ai.apiKey')}</span>
         <input
+          data-testid="ai-api-key"
           className="ink-input"
           type="password"
           value={apiKey}
@@ -130,7 +131,7 @@ export function AiSettingsModal({ onClose }: { onClose: () => void }): ReactNode
 
       <label className="ink-field">
         <span className="ink-field-label">{t('ai.model')}</span>
-        <input className="ink-input" value={model} onChange={(e) => setModel(e.target.value)} placeholder={preset?.defaultModel} />
+        <input data-testid="ai-model" className="ink-input" value={model} onChange={(e) => setModel(e.target.value)} placeholder={preset?.defaultModel} />
       </label>
     </Modal>
   );
@@ -188,6 +189,7 @@ export function AiImportModal({
               {t('common.cancel')}
             </button>
             <button
+              data-testid="ai-import-replace"
               className="ink-btn ink-btn-primary"
               onClick={() => {
                 onReplace(result);
@@ -203,7 +205,7 @@ export function AiImportModal({
             <button className="ink-btn ink-btn-ghost" onClick={onClose}>
               {t('common.cancel')}
             </button>
-            <button className="ink-btn ink-btn-primary" onClick={convert} disabled={busy || text.trim() === ''}>
+            <button data-testid="ai-import-convert" className="ink-btn ink-btn-primary" onClick={convert} disabled={busy || text.trim() === ''}>
               {busy ? (
                 <>
                   <span className="ink-spinner" /> {t('ai.converting')}
@@ -222,6 +224,7 @@ export function AiImportModal({
         <>
           <p className="ink-modal-intro">{t('ai.importIntro')}</p>
           <textarea
+            data-testid="ai-import-text"
             className="ink-input ink-import-text"
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -332,11 +335,11 @@ export function AiPolishModal({
             {t('common.cancel')}
           </button>
           {polished ? (
-            <button className="ink-btn ink-btn-primary" onClick={apply}>
+            <button data-testid="ai-polish-apply" className="ink-btn ink-btn-primary" onClick={apply}>
               {t('common.apply')}
             </button>
           ) : (
-            <button className="ink-btn ink-btn-primary" onClick={run} disabled={busy || original.length === 0}>
+            <button data-testid="ai-polish-run" className="ink-btn ink-btn-primary" onClick={run} disabled={busy || original.length === 0}>
               {busy ? (
                 <>
                   <span className="ink-spinner" /> {t('ai.polishing')}

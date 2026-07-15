@@ -2,14 +2,36 @@ name: Desktop release
 
 on:
   push:
-    tags: ['v*']
-  workflow_dispatch:
+    tags: ['v0.2.0']
 
 permissions:
   contents: write
 
 jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Cache CJK fonts
+        uses: actions/cache@v4
+        with:
+          path: packages/renderer/assets/fonts
+          key: noto-cjk-v1
+      - run: node packages/renderer/scripts/fetch-fonts.mjs
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm --filter @inkcv/web build
+      - run: pnpm exec playwright install --with-deps chromium webkit
+      - run: pnpm test:e2e
+
   build:
+    needs: quality
     strategy:
       fail-fast: false
       matrix:
@@ -17,15 +39,19 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             bundles: nsis,msi
+            artifact: desktop-windows-x64
           - os: macos-15-intel
             target: x86_64-apple-darwin
             bundles: dmg
+            artifact: desktop-macos-x64
           - os: macos-14
             target: aarch64-apple-darwin
             bundles: dmg
+            artifact: desktop-macos-arm64
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             bundles: appimage,deb
+            artifact: desktop-linux-x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +67,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf xvfb
       - run: pnpm install --frozen-lockfile
       - name: Cache CJK fonts
         uses: actions/cache@v4
@@ -49,27 +75,61 @@ jobs:
           path: packages/renderer/assets/fonts
           key: noto-cjk-v1
       - run: node packages/renderer/scripts/fetch-fonts.mjs
-      - name: Build and upload unsigned bundles
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          projectPath: apps/desktop
-          tagName: v__VERSION__
-          releaseName: InkCV v__VERSION__
-          releaseBody: |
-            InkCV v0.2 public beta. These packages are currently unsigned.
-
-            Windows SmartScreen and macOS Gatekeeper may show a warning. Verify the SHA-256 file before continuing.
-          releaseDraft: true
-          prerelease: true
-          args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
-      - name: Generate SHA-256 files
+      - name: Build unsigned bundles
+        run: pnpm --filter @inkcv/desktop exec tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+      - name: Smoke Windows installers
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/smoke-windows.ps1 "apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
+      - name: Smoke macOS DMG
+        if: runner.os == 'macOS'
         shell: bash
-        run: node scripts/write-checksums.mjs apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle
-      - name: Upload SHA-256 files to draft release
+        run: bash scripts/smoke-macos.sh "apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
+      - name: Smoke Linux bundles
+        if: runner.os == 'Linux'
+        shell: bash
+        run: bash scripts/smoke-linux.sh "apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
+      - name: Upload verified bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.msi
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-*
+          path: release-assets
+          merge-multiple: true
+      - name: Generate SHA-256 files
+        run: node scripts/write-checksums.mjs release-assets
+      - name: Verify release asset set
+        run: node scripts/verify-release-assets.mjs release-assets
+      - name: Publish public beta prerelease
         uses: softprops/action-gh-release@v2
         with:
-          draft: true
+          draft: false
           prerelease: true
-          files: apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.sha256
+          name: InkCV v0.2.0 Public Beta
+          body_path: RELEASE_NOTES.md
+          files: |
+            release-assets/**/*.exe
+            release-assets/**/*.msi
+            release-assets/**/*.dmg
+            release-assets/**/*.AppImage
+            release-assets/**/*.deb
+            release-assets/**/*.sha256

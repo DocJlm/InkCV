@@ -42,7 +42,7 @@ export function MarkdownEditor(): ReactNode {
   };
 
   return (
-    <div className="ink-md">
+    <div className="ink-md" data-testid="markdown-editor">
       <div className="ink-md-editor" onBlur={commitNow}>
         <CodeMirror
           value={mdBuffer}

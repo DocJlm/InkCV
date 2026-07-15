@@ -26,7 +26,7 @@
 - **首发 PDF 模板**：`onyx`（通用左对齐单栏）、`lapis`（紧凑中文排版）、`classic`（居中页眉与经典分节）、`minimal-ats`（兼顾机器读取与视觉层次的简洁单栏）。四款全部通过 `compileResume()` 渲染，模板组件接收集中解析后的 `ResolvedTheme`。
 - **颜色策略**：新建和首跑示例显式使用黑色预设（强调色/正文色 `#1a1a1a`）；蓝色预设为 `#2f5c8f` + `#1a1a1a`；保留自定义取色。旧文档不迁移，切换模板不覆盖字体、颜色、字号、行高、间距或页边距。
 - **模板画廊**：编辑器使用 2×2 真实 PDF 首页面缩略图画廊，缩略图由中英文示例经 `compileResume()` 和 `pdftoppm` 生成。
-- **响应式边界**：≥1280px 保持三栏；900-1279px 将简历列表改为抽屉并保留编辑/预览双栏；<900px 显示桌面端提示，不提供功能残缺的手机编辑器。
+- **响应式边界**：≥1280px 保持三栏；900-1279px 将简历列表改为抽屉并保留编辑/预览双栏；<900px 使用完整的“编辑 / 预览”双标签手机工作台，设置与导出通过移动端面板进入。
 - **参考与原创边界**：借鉴 [LapisCV](https://github.com/BingyanStudio/LapisCV) 的中文排版/主题变量和 [billryan/resume](https://github.com/billryan/resume) 的经典层级；不复用其 HTML/CSS 或 XeLaTeX 渲染路径。
 
 ## 关键技术决策（调研支撑）
@@ -63,7 +63,7 @@ templates/     内置模板包（Onyx、Lapis、Classic、Minimal ATS，首发 4
 - **M2 renderer**：第一款模板 + ThemeTokens；CJK 字体注册/懒加载/子集化；PDF worker + pdf.js 预览管线（debounce/取消/保帧）。
 - **M3 UI**：表单编辑器（分 section 增删排序、可见性开关）⇋ CodeMirror md 编辑器双模式切换；主题调节面板；IndexedDB 自动保存 + 多简历管理；界面 i18n（zh/en）；首次打开加载示例简历（中英各一）。
 - **M4 导出**：PDF 下载、.md 导出、.tex 导出（两款 Mustache 模板起步）；桌面端走原生保存对话框。
-- **M5 AI**：设置页 BYO Key（web 存 IndexedDB、桌面存 keychain）；「粘贴任意文本 → 结构化简历」导入向导；一键润色 bullets。
+- **M5 AI**：设置页 BYO Key（Web 仅当前内存会话、桌面存系统凭据库）；「粘贴任意文本 → 结构化简历」导入向导；一键润色 bullets。
 - **M6 模板扩充（已完成）**：4 款内置模板、黑蓝预设和真实缩略图模板画廊。
 - **M7 桌面打包**：Tauri 三平台构建 + GitHub Releases 自动发版工作流。
 - **M8 开源发布件**：中英双语 README（在线 Demo 链接置顶 + GIF 演示）、截图、issue 模板（防 billryan 式垃圾 issue）、CONTRIBUTING、示例简历库。
@@ -72,7 +72,7 @@ templates/     内置模板包（Onyx、Lapis、Classic、Minimal ATS，首发 4
 
 - **单元/属性测试**：core 回环恒等（fast-check）、schema migration、tex 模板快照——`pnpm test` 全绿。
 - **端到端**：`pnpm dev` 起 Web 版，用 Playwright 走通「新建→表单填写→切 md 源码改动→切回表单确认同步→换模板→调主题→导出 PDF/.md/.tex」全流程；中文简历导出 PDF 后用 `pdffonts` 确认字体已嵌入、分页正确。
-- **桌面冒烟**：Linux 本机 `tauri build` 打包启动，验证文件保存/打开。
+- **桌面冒烟**：tag 工作流在 Windows、Intel/ARM macOS 与 Linux 构建真实安装包，完成安装/挂载、启动与进程存活检查后再进入发布 job。
 - **AI 链路**：用用户提供的 Key（或 mock server）验证 txt→简历导入。
 
 ## 风险登记（Top 5）

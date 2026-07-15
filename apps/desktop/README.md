@@ -1,6 +1,6 @@
 # @inkcv/desktop
 
-Tauri 2 desktop shell wrapping the InkCV web app.
+Tauri 2 desktop application for InkCV. It shares the React UI and PDF renderer with the Web app, while providing native HTTP, open/save dialogs, file access, and OS credential storage.
 
 ## Prerequisites
 
@@ -11,12 +11,17 @@ Tauri 2 desktop shell wrapping the InkCV web app.
 
 ```bash
 pnpm --filter @inkcv/desktop dev     # tauri dev (starts the web dev server automatically)
-pnpm --filter @inkcv/desktop build   # tauri build (bundling disabled until icons are added)
+pnpm --filter @inkcv/desktop build   # platform-native unsigned bundles
 ```
 
-## TODO (M7)
+The bundle is configured for Windows NSIS/MSI, macOS DMG, and Linux AppImage/Deb. Builds are platform-specific; GitHub Actions produces all release targets from a tag.
 
-- App icons (`pnpm --filter @inkcv/desktop tauri icon <source.png>`), then set `bundle.active: true`
-- Native save dialogs via tauri-plugin-dialog/fs (blob downloads are unreliable in WKWebView)
-- Store the AI API key in the OS keychain instead of localStorage
-- GitHub Releases workflow for Win/macOS/Linux artifacts
+## Runtime behavior
+
+- Imports and exports use native dialogs and filesystem APIs.
+- AI requests use the Tauri HTTP plugin instead of the Web proxy.
+- API keys use macOS Keychain, Windows Credential Manager, or Linux Secret Service through the Rust keyring backend.
+- If Linux has no usable Secret Service, the key remains in memory for the current session and the UI shows a warning.
+- Capabilities are limited in `src-tauri/capabilities/default.json`; CSP remains enabled.
+
+Packages are intentionally unsigned in v0.2. Release checks install or mount each generated package, start the application, and confirm that its process remains alive before publication.
