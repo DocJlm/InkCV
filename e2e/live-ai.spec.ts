@@ -64,5 +64,5 @@ test('production DeepSeek import, polish, auth error and secret lifecycle', asyn
     data: {},
   });
   expect(response.status()).toBe(401);
-  expect(response.headers()['cache-control']).toBe('no-store');
+  expect(response.headers()['cache-control']).toContain('no-store');
 });

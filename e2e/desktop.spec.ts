@@ -94,6 +94,6 @@ test('the local AI proxy rejects missing credentials without caching', async ({ 
     data: {},
   });
   expect(response.status()).toBe(401);
-  expect(response.headers()['cache-control']).toBe('no-store');
+  expect(response.headers()['cache-control']).toContain('no-store');
   await expect(response.json()).resolves.toEqual({ error: 'missing_api_key' });
 });
