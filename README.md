@@ -4,7 +4,7 @@
 >
 > 本地优先的开源简历工具：表单与 Markdown 双模式编辑、真实 PDF 预览、四款模板、自带 Key 的 AI、备份与完整导出。
 
-[在线版 / Web app](https://inkcv.vercel.app) · [桌面版 / Desktop downloads](https://github.com/roboutezhao/InkCV/releases/latest) · [隐私说明 / Privacy](docs/PRIVACY.md) · [参与贡献 / Contributing](CONTRIBUTING.md)
+[在线版 / Web app](https://inkcv.vercel.app) · [桌面版 / Desktop downloads](https://github.com/DocJlm/InkCV/releases/latest) · [隐私说明 / Privacy](docs/PRIVACY.md) · [参与贡献 / Contributing](CONTRIBUTING.md)
 
 > v0.2 is a public beta. Desktop packages are unsigned; read the installation notes below and verify the included SHA-256 file.
 >

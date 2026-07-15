@@ -18,7 +18,7 @@ import {
 import type { DocMeta } from '../types';
 import { useAppServices } from '../services';
 
-const GITHUB_URL = 'https://github.com/roboutezhao/InkCV';
+const GITHUB_URL = 'https://github.com/DocJlm/InkCV';
 
 export function LeftRail({
   docs,

@@ -271,10 +271,10 @@ function InkCvAppInner({ store }: { store: DocStore }): ReactElement {
           <p>{t('about.version', { version: appVersion })}</p>
           <p className="ink-modal-intro">{t('about.body')}</p>
           <div className="ink-row">
-            <button className="ink-btn" onClick={() => void openExternal('https://github.com/roboutezhao/InkCV')}>
+            <button className="ink-btn" onClick={() => void openExternal('https://github.com/DocJlm/InkCV')}>
               {t('nav.github')}
             </button>
-            <button className="ink-btn" onClick={() => void openExternal('https://github.com/roboutezhao/InkCV/releases')}>
+            <button className="ink-btn" onClick={() => void openExternal('https://github.com/DocJlm/InkCV/releases')}>
               {t('about.releases')}
             </button>
           </div>
