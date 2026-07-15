@@ -2,7 +2,7 @@ name: Desktop release
 
 on:
   push:
-    tags: ['v0.2.0']
+    tags: ['v0.3.0']
 
 permissions:
   contents: write
@@ -124,7 +124,7 @@ jobs:
         with:
           draft: false
           prerelease: true
-          name: InkCV v0.2.0 Public Beta
+          name: InkCV v0.3.0 Public Beta
           body_path: RELEASE_NOTES.md
           files: |
             release-assets/**/*.exe

@@ -25,6 +25,14 @@ test('production DeepSeek import, polish, auth error and secret lifecycle', asyn
   await page.getByTestId('ai-import-replace').click();
   await expect(page.getByTestId('basics-name')).toHaveValue(/李明/);
 
+  await page.getByTestId('document-language').selectOption('zh');
+  const documentCount = await page.locator('.ink-doc-item').count();
+  await page.getByTestId('ai-translate-open').click();
+  await page.getByTestId('ai-translate-run').click();
+  await expect(page.locator('.ink-doc-item')).toHaveCount(documentCount + 1, { timeout: 120_000 });
+  await expect(page.getByTestId('document-language')).toHaveValue('en');
+  await expect(page.getByTestId('basics-name')).not.toHaveValue('李明');
+
   await page.getByTestId('ai-import').click();
   await page.getByTestId('ai-import-text').fill(
     'Alex Chen, product engineer. Since March 2023 at Example Labs, built a TypeScript workflow used by 20 teams and reduced release time by 60 percent.',

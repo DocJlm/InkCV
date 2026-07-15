@@ -18,7 +18,7 @@ import { FormEditor } from './FormEditor';
 import { MarkdownEditor } from './MarkdownEditor';
 import { PreviewPane } from './PreviewPane';
 import { Modal } from '../primitives';
-import { AiSettingsModal, AiImportModal } from './AiModals';
+import { AiSettingsModal, AiImportModal, AiTranslateModal } from './AiModals';
 
 export function InkCvApp(props: { store: DocStore; services?: AppServices }): ReactElement {
   return (
@@ -35,6 +35,7 @@ function InkCvAppInner({ store }: { store: DocStore }): ReactElement {
   const [deleteTarget, setDeleteTarget] = useState<DocMeta | null>(null);
   const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [translateOpen, setTranslateOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(false);
   const [mobilePane, setMobilePane] = useState<'edit' | 'preview'>('edit');
   const [backupCandidate, setBackupCandidate] = useState<ResumeDoc | null>(null);
@@ -172,6 +173,14 @@ function InkCvAppInner({ store }: { store: DocStore }): ReactElement {
     await refreshList();
   }, [backupCandidate, store, loadDoc, refreshList]);
 
+  const createTranslatedCopy = useCallback(async (translated: ResumeDoc) => {
+    // Persist the source snapshot first. A mocked or very fast provider can
+    // return before the normal debounced save, and the original must never
+    // lose edits when the new copy is opened.
+    if (currentDoc) await store.save(currentDoc);
+    await createAndOpen(translated);
+  }, [currentDoc, store, createAndOpen]);
+
   return (
     <>
       <div className="ink-desktop-required" role="status">
@@ -210,7 +219,7 @@ function InkCvAppInner({ store }: { store: DocStore }): ReactElement {
         }}
       />
 
-      <MiddlePane onOpenRail={() => setRailOpen(true)} />
+      <MiddlePane onOpenRail={() => setRailOpen(true)} onTranslate={() => setTranslateOpen(true)} />
 
       <PreviewPane />
 
@@ -245,6 +254,13 @@ function InkCvAppInner({ store }: { store: DocStore }): ReactElement {
 
       {aiSettingsOpen && <AiSettingsModal onClose={() => setAiSettingsOpen(false)} />}
       {importOpen && <AiImportModal onClose={() => setImportOpen(false)} onReplace={handleReplace} />}
+      {translateOpen && currentDoc && (
+        <AiTranslateModal
+          doc={currentDoc}
+          onClose={() => setTranslateOpen(false)}
+          onCreateCopy={createTranslatedCopy}
+        />
+      )}
       {backupCandidate && (
         <Modal
           title={t('backup.conflictTitle')}
@@ -288,11 +304,13 @@ function InkCvAppInner({ store }: { store: DocStore }): ReactElement {
 // ---------------------------------------------------------------------------
 // Middle pane: mode toggle + contextual editor
 
-function MiddlePane({ onOpenRail }: { onOpenRail: () => void }): ReactNode {
+function MiddlePane({ onOpenRail, onTranslate }: { onOpenRail: () => void; onTranslate: () => void }): ReactNode {
   const { t } = useTranslation();
   const viewMode = useEditorStore((s) => s.viewMode);
   const setViewMode = useEditorStore((s) => s.setViewMode);
   const hasDoc = useEditorStore((s) => s.doc !== null);
+  const locale = useEditorStore((s) => s.doc?.settings.locale ?? 'zh');
+  const updateDoc = useEditorStore((s) => s.updateDoc);
 
   return (
     <div className="ink-middle">
@@ -320,6 +338,23 @@ function MiddlePane({ onOpenRail }: { onOpenRail: () => void }): ReactNode {
             {t('toolbar.markdown')}
           </button>
         </div>
+        <div className="ink-spacer" />
+        <label className="ink-document-language">
+          <span>{t('documentLanguage.label')}</span>
+          <select
+            data-testid="document-language"
+            className="ink-input ink-select-sm"
+            value={locale}
+            title={t('documentLanguage.formatOnly')}
+            onChange={(event) => updateDoc((draft) => void (draft.settings.locale = event.target.value as 'zh' | 'en'))}
+          >
+            <option value="zh">{t('documentLanguage.zh')}</option>
+            <option value="en">{t('documentLanguage.en')}</option>
+          </select>
+        </label>
+        <button data-testid="ai-translate-open" className="ink-btn ink-btn-sm ink-btn-ai" onClick={onTranslate}>
+          {t('documentLanguage.translate')}
+        </button>
       </div>
       <div className="ink-middle-body">
         {hasDoc && (viewMode === 'form' ? <FormEditor /> : <MarkdownEditor />)}

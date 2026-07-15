@@ -145,7 +145,7 @@ export async function createDesktopServices(): Promise<AppServices> {
     files: desktopFiles,
     runtime: 'desktop',
     credentialPersistence: credential.available ? 'system' : 'session-fallback',
-    appVersion: await getVersion().catch(() => '0.2.0'),
+    appVersion: await getVersion().catch(() => '0.3.0'),
     async openExternal(url) {
       await openUrl(url);
     },

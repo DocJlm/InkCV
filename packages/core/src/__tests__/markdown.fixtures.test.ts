@@ -10,9 +10,14 @@ import { formatEntryLine, parseEntryLine } from '../markdown/entryLine';
 const NOW = '2026-01-01T00:00:00.000Z';
 
 describe('sample resume serialization', () => {
-  it('uses the black Onyx preset for new and sample resumes', () => {
+  it('uses locale-specific template defaults for new documents', () => {
+    expect(createEmptyResume('zh', NOW).settings.template).toBe('lapis');
+    expect(createEmptyResume('en', NOW).settings.template).toBe('onyx');
+    expect(sampleResume('zh', NOW).settings.template).toBe('lapis');
+    expect(sampleResume('en', NOW).settings.template).toBe('onyx');
+  });
+  it('uses the black color preset for new and sample resumes', () => {
     for (const doc of [createEmptyResume('zh', NOW), sampleResume('zh', NOW), sampleResume('en', NOW)]) {
-      expect(doc.settings.template).toBe('onyx');
       expect(doc.settings.tokens.accentColor).toBe(RESUME_COLOR_PRESETS.black.accentColor);
       expect(doc.settings.tokens.textColor).toBe(RESUME_COLOR_PRESETS.black.textColor);
     }

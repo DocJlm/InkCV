@@ -18,8 +18,9 @@ import { useEditorStore } from '../store';
 import { DropdownMenu, IconClose, IconDownload, IconSliders, type MenuItem } from '../primitives';
 import { useAppServices } from '../services';
 
-const ZOOMS = [0.75, 1, 1.25] as const;
-const RENDER_SCALE = 1.6;
+const ZOOMS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+type ZoomMode = 'fit' | number;
+const PDF_TO_CSS = 96 / 72;
 
 const TEMPLATE_PREVIEWS = {
   onyx: {
@@ -38,6 +39,22 @@ const TEMPLATE_PREVIEWS = {
     zh: new URL('../assets/template-previews/minimal-ats-zh.png', import.meta.url).href,
     en: new URL('../assets/template-previews/minimal-ats-en.png', import.meta.url).href,
   },
+  'compact-tech': {
+    zh: new URL('../assets/template-previews/compact-tech-zh.png', import.meta.url).href,
+    en: new URL('../assets/template-previews/compact-tech-en.png', import.meta.url).href,
+  },
+  'section-rail': {
+    zh: new URL('../assets/template-previews/section-rail-zh.png', import.meta.url).href,
+    en: new URL('../assets/template-previews/section-rail-en.png', import.meta.url).href,
+  },
+  timeline: {
+    zh: new URL('../assets/template-previews/timeline-zh.png', import.meta.url).href,
+    en: new URL('../assets/template-previews/timeline-en.png', import.meta.url).href,
+  },
+  profile: {
+    zh: new URL('../assets/template-previews/profile-zh.png', import.meta.url).href,
+    en: new URL('../assets/template-previews/profile-en.png', import.meta.url).href,
+  },
 } as const;
 
 const TEMPLATE_DESCRIPTION_KEYS = {
@@ -45,6 +62,10 @@ const TEMPLATE_DESCRIPTION_KEYS = {
   lapis: 'template.lapis.description',
   classic: 'template.classic.description',
   'minimal-ats': 'template.minimalAts.description',
+  'compact-tech': 'template.compactTech.description',
+  'section-rail': 'template.sectionRail.description',
+  timeline: 'template.timeline.description',
+  profile: 'template.profile.description',
 } as const;
 
 export function PreviewPane(): ReactNode {
@@ -54,31 +75,61 @@ export function PreviewPane(): ReactNode {
   const setPreviewBytes = useEditorStore((s) => s.setPreviewBytes);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const fullscreenButtonRef = useRef<HTMLButtonElement>(null);
   const controllerRef = useRef<PdfPreviewController | null>(null);
   const pendingRevision = useRef(0);
   const freshRevision = useRef(-1);
   const latestDoc = useRef<ResumeDoc | null>(null);
   const fallbackRevision = useRef(-1);
+  const rasterRevision = useRef(0);
 
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState<ZoomMode>('fit');
+  const [availableWidth, setAvailableWidth] = useState(640);
+  const [frameBytes, setFrameBytes] = useState<Uint8Array | null>(null);
   const [pageCount, setPageCount] = useState(0);
   const [compiling, setCompiling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [styleOpen, setStyleOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+
+  const pageWidth = (doc?.settings.page.size === 'Letter' ? 612 : 595.28) * PDF_TO_CSS;
+  // Fit mode may go below the explicit 50% control on narrow phones so the
+  // page truly fits without horizontal scrolling.
+  const fitZoom = Math.max(0.25, Math.min(2, (availableWidth - 32) / pageWidth));
+  const effectiveZoom = zoom === 'fit' ? fitZoom : zoom;
+
+  useEffect(() => {
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    const update = () => setAvailableWidth(scroll.clientWidth);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(scroll);
+    return () => observer.disconnect();
+  }, [fullscreen]);
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setFullscreen(false);
+        requestAnimationFrame(() => fullscreenButtonRef.current?.focus());
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [fullscreen]);
 
   // Create the controller once.
   useEffect(() => {
     // Paint a compiled frame: mark it fresh, then rasterise onto the canvases.
     const paint = (bytes: Uint8Array, revision: number) => {
       setPreviewBytes(bytes);
+      setFrameBytes(bytes);
       setCompiling(false);
       setError(null);
       freshRevision.current = revision;
-      const container = containerRef.current;
-      if (!container) return;
-      void renderPdfToCanvas(bytes, container, { scale: RENDER_SCALE })
-        .then(() => setPageCount(container.childElementCount))
-        .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
     };
 
     const controller = new PdfPreviewController({
@@ -125,25 +176,53 @@ export function PreviewPane(): ReactNode {
     controllerRef.current.setDoc(doc);
   }, [doc, docRevision]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!frameBytes || !container) return;
+    const revision = ++rasterRevision.current;
+    const abortController = new AbortController();
+    const staging = document.createElement('div');
+    void renderPdfToCanvas(frameBytes, staging, {
+      scale: PDF_TO_CSS * effectiveZoom,
+      signal: abortController.signal,
+    })
+      .then(() => {
+        if (revision !== rasterRevision.current) return;
+        container.replaceChildren(...Array.from(staging.childNodes));
+        setPageCount(container.childElementCount);
+      })
+      .catch((value: unknown) => {
+        if (!abortController.signal.aborted && revision === rasterRevision.current) {
+          setError(value instanceof Error ? value.message : String(value));
+        }
+      });
+    return () => abortController.abort();
+  }, [frameBytes, effectiveZoom]);
+
   const isPreviewFresh = () => freshRevision.current === docRevision;
 
   return (
-    <div className="ink-preview">
+    <div className={`ink-preview${fullscreen ? ' ink-preview-fullscreen' : ''}`}>
       <div className="ink-preview-toolbar">
         <TemplateGallery />
 
+        <button className="ink-icon-btn ink-zoom-btn" aria-label={t('preview.zoomOut')} onClick={() => setZoom(previousZoom(effectiveZoom))}>−</button>
         <select
+          data-testid="preview-zoom"
           className="ink-input ink-select-sm"
           value={zoom}
-          onChange={(e) => setZoom(Number(e.target.value))}
+          onChange={(e) => setZoom(e.target.value === 'fit' ? 'fit' : Number(e.target.value))}
           aria-label={t('preview.zoom')}
         >
+          <option value="fit">{t('preview.fit')}</option>
           {ZOOMS.map((z) => (
             <option key={z} value={z}>
               {Math.round(z * 100)}%
             </option>
           ))}
         </select>
+        <button className="ink-icon-btn ink-zoom-btn" aria-label={t('preview.zoomIn')} onClick={() => setZoom(nextZoom(effectiveZoom))}>+</button>
+        <button className="ink-btn ink-btn-sm ink-preview-actual" onClick={() => setZoom(1)}>{t('preview.actualSize')}</button>
 
         <span className="ink-page-count">
           {pageCount > 0 ? t('preview.pages', { count: pageCount }) : '-'}
@@ -159,6 +238,16 @@ export function PreviewPane(): ReactNode {
         <div className="ink-spacer" />
 
         <button
+          ref={fullscreenButtonRef}
+          data-testid="preview-fullscreen"
+          className="ink-btn ink-btn-sm"
+          aria-pressed={fullscreen}
+          onClick={() => setFullscreen((value) => !value)}
+        >
+          {fullscreen ? t('preview.exitFullscreen') : t('preview.fullscreen')}
+        </button>
+
+        <button
           data-testid="style-toggle"
           className={`ink-btn ink-btn-sm${styleOpen ? ' active' : ''}`}
           onClick={() => setStyleOpen((v) => !v)}
@@ -171,7 +260,7 @@ export function PreviewPane(): ReactNode {
 
       {styleOpen && <ThemeDrawer />}
 
-      <div className="ink-preview-scroll">
+      <div className="ink-preview-scroll" ref={scrollRef}>
         {pageCount === 0 && (
           <div className="ink-preview-placeholder">{error ? t('preview.error') : t('preview.empty')}</div>
         )}
@@ -182,13 +271,21 @@ export function PreviewPane(): ReactNode {
           data-testid="preview"
           ref={containerRef}
           style={{
-            '--ink-desktop-preview-width': `${Math.round(zoom * 640)}px`,
-            '--ink-mobile-preview-width': `calc(${zoom * 100}vw - ${Math.round(zoom * 16)}px)`,
+            '--ink-desktop-preview-width': `${Math.round(effectiveZoom * pageWidth)}px`,
+            '--ink-mobile-preview-width': `${Math.round(effectiveZoom * pageWidth)}px`,
           } as CSSProperties}
         />
       </div>
     </div>
   );
+}
+
+function previousZoom(current: number): number {
+  return [...ZOOMS].reverse().find((value) => value < current - 0.01) ?? ZOOMS[0]!;
+}
+
+function nextZoom(current: number): number {
+  return ZOOMS.find((value) => value > current + 0.01) ?? ZOOMS[ZOOMS.length - 1]!;
 }
 
 function localeName(tpl: { nameZh: string; nameEn: string }, zh: boolean): string {
@@ -201,7 +298,8 @@ function TemplateGallery(): ReactNode {
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const currentTemplate = useEditorStore((state) => state.doc?.settings.template ?? 'onyx');
-  const zh = i18n.language.toLowerCase().startsWith('zh');
+  const uiZh = i18n.language.toLowerCase().startsWith('zh');
+  const documentLocale = useEditorStore((state) => state.doc?.settings.locale ?? 'zh');
   const current = templates.find((template) => template.id === currentTemplate) ?? templates[0]!;
 
   useEffect(() => {
@@ -233,9 +331,12 @@ function TemplateGallery(): ReactNode {
       event.currentTarget.querySelectorAll<HTMLButtonElement>('.ink-template-card'),
     );
     const index = cards.indexOf(document.activeElement as HTMLButtonElement);
+    const columns = Math.max(1, getComputedStyle(event.currentTarget).gridTemplateColumns.split(' ').length);
     let next = index;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (index + 1) % cards.length;
-    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (index - 1 + cards.length) % cards.length;
+    if (event.key === 'ArrowRight') next = (index + 1) % cards.length;
+    else if (event.key === 'ArrowLeft') next = (index - 1 + cards.length) % cards.length;
+    else if (event.key === 'ArrowDown') next = (index + columns) % cards.length;
+    else if (event.key === 'ArrowUp') next = (index - columns + cards.length) % cards.length;
     else if (event.key === 'Home') next = 0;
     else if (event.key === 'End') next = cards.length - 1;
     else return;
@@ -254,7 +355,7 @@ function TemplateGallery(): ReactNode {
         onClick={() => setOpen((value) => !value)}
       >
         <span className="ink-template-trigger-label">{t('preview.template')}</span>
-        <strong>{localeName(current, zh)}</strong>
+        <strong>{localeName(current, uiZh)}</strong>
       </button>
 
       {open && (
@@ -279,7 +380,7 @@ function TemplateGallery(): ReactNode {
           <div className="ink-template-grid" role="listbox" onKeyDown={moveFocus}>
             {templates.map((template) => {
               const selected = template.id === currentTemplate;
-              const preview = TEMPLATE_PREVIEWS[template.id][zh ? 'zh' : 'en'];
+              const preview = TEMPLATE_PREVIEWS[template.id][documentLocale];
               return (
                 <button
                   data-testid={`template-${template.id}`}
@@ -304,8 +405,15 @@ function TemplateGallery(): ReactNode {
                     />
                   </span>
                   <span className="ink-template-card-copy">
-                    <strong>{localeName(template, zh)}</strong>
+                    <strong>{localeName(template, uiZh)}</strong>
                     <small>{t(TEMPLATE_DESCRIPTION_KEYS[template.id])}</small>
+                    <span className="ink-template-tags" aria-hidden="true">
+                      <span>{uiZh ? template.layoutZh : template.layoutEn}</span>
+                      <span>{t(`templateGallery.density.${template.density}`)}</span>
+                      {template.atsFriendly && <span>ATS</span>}
+                      {template.photoTreatment === 'portrait' && <span>{t('templateGallery.photo')}</span>}
+                      <span>{t(documentLocale === 'zh' ? 'templateGallery.sampleZh' : 'templateGallery.sampleEn')}</span>
+                    </span>
                   </span>
                 </button>
               );

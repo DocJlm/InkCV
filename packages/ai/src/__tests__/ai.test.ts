@@ -2,10 +2,12 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { chatComplete } from '../client';
 import { textToResumeDraft, draftToDoc } from '../extract';
 import { polishBullets } from '../polish';
+import { resumeTranslationPayload, translateResume } from '../translate';
 import { extractJson } from '../jsonUtil';
 import { AiError } from '../errors';
 import { AiConfig } from '../types';
 import { ResumeDocSchema } from '../../../core/src/schema';
+import { sampleResume } from '../../../core/src/samples';
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -281,5 +283,69 @@ describe('polishBullets', () => {
     const out = await polishBullets(OPENAI_CFG, { bullets: [], locale: 'en' });
     expect(out).toEqual([]);
     expect(calls).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// full-resume translation
+
+describe('translateResume', () => {
+  function translatedResponse(doc = sampleResume('en')): Record<string, unknown> {
+    const payload = resumeTranslationPayload(doc, 'zh') as {
+      basics: { name: string; headline?: string; customFields: unknown[] };
+      sections: Array<Record<string, unknown>>;
+    };
+    return {
+      basics: {
+        ...payload.basics,
+        name: '李墨',
+        headline: '前端工程师',
+      },
+      sections: payload.sections.map((section) => ({
+        ...section,
+        title: `译文-${String(section['title'])}`,
+        entries: Array.isArray(section['entries'])
+          ? (section['entries'] as Array<Record<string, unknown>>).map((entry) => ({
+              ...entry,
+              bullets: (entry['bullets'] as string[]).map((bullet) => `译文-${bullet}`),
+            }))
+          : undefined,
+        markdown: typeof section['markdown'] === 'string' ? `译文-${section['markdown']}` : undefined,
+      })),
+    };
+  }
+
+  it('creates a translated copy without sending contacts, dates or photos', async () => {
+    const source = sampleResume('en');
+    source.settings.template = 'classic';
+    source.basics.photo = { src: 'data:image/jpeg;base64,secret-photo', visible: true };
+    const calls = stubFetch({ choices: [{ message: { content: JSON.stringify(translatedResponse(source)) } }] });
+
+    const translated = await translateResume(OPENAI_CFG, source, 'zh');
+    expect(translated.meta.id).not.toBe(source.meta.id);
+    expect(translated.settings.locale).toBe('zh');
+    expect(translated.settings.template).toBe('classic');
+    expect(translated.basics.name).toBe('李墨');
+    expect(translated.basics.contacts).toEqual(source.basics.contacts);
+    expect(translated.basics.photo).toEqual(source.basics.photo);
+    expect(source.basics.name).toBe('Mo Li');
+
+    const request = JSON.stringify(JSON.parse(calls[0]!.init!.body as string).messages[1].content);
+    expect(request).not.toContain('limo@example.com');
+    expect(request).not.toContain('2022-07');
+    expect(request).not.toContain('secret-photo');
+  });
+
+  it('rejects duplicate or missing stable ids', async () => {
+    const source = sampleResume('en');
+    const response = translatedResponse(source) as {
+      sections: Array<{ id: string }>;
+    };
+    response.sections[1]!.id = response.sections[0]!.id;
+    stubFetch({ choices: [{ message: { content: JSON.stringify(response) } }] });
+
+    const error = await translateResume(OPENAI_CFG, source, 'zh').catch((value) => value);
+    expect(error).toBeInstanceOf(AiError);
+    expect((error as AiError).kind).toBe('parse');
   });
 });

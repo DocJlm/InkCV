@@ -21,12 +21,33 @@ test('form, Markdown, persistence, templates and color presets stay in sync', as
   await page.getByTestId('mode-form').click();
   await expect(page.getByTestId('basics-name')).toHaveValue('Round Trip Candidate');
 
-  for (const template of ['onyx', 'lapis', 'classic', 'minimal-ats']) {
+  for (const template of ['onyx', 'lapis', 'classic', 'minimal-ats', 'compact-tech', 'section-rail', 'timeline', 'profile']) {
     await page.getByTestId('template-picker').click();
     await page.getByTestId(`template-${template}`).click();
     await expect(page.getByTestId('template-picker')).toHaveAttribute('aria-expanded', 'false');
     await waitForPreview(page);
   }
+
+  const originalDocumentLanguage = await page.getByTestId('document-language').inputValue();
+  const interfaceSwitch = originalDocumentLanguage === 'zh' ? 'interface-language-en' : 'interface-language-zh';
+  await page.getByTestId(interfaceSwitch).click();
+  await expect(page.getByTestId('basics-name')).toHaveValue('Round Trip Candidate');
+  await expect(page.getByTestId('document-language')).toHaveValue(originalDocumentLanguage);
+  const changedDocumentLanguage = originalDocumentLanguage === 'zh' ? 'en' : 'zh';
+  await page.getByTestId('document-language').selectOption(changedDocumentLanguage);
+  await expect(page.getByTestId('basics-name')).toHaveValue('Round Trip Candidate');
+  await expect(page.getByTestId('document-language')).toHaveValue(changedDocumentLanguage);
+
+  const zoom = page.getByTestId('preview-zoom');
+  await expect(zoom).toHaveValue('fit');
+  await zoom.selectOption('1');
+  const previewWidth = await page.getByTestId('preview').evaluate((node) => node.getBoundingClientRect().width);
+  expect(previewWidth).toBeGreaterThan(790);
+  expect(previewWidth).toBeLessThan(800);
+  await page.getByTestId('preview-fullscreen').click();
+  await expect(page.locator('.ink-preview')).toHaveClass(/ink-preview-fullscreen/);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.ink-preview')).not.toHaveClass(/ink-preview-fullscreen/);
 
   await page.getByTestId('style-toggle').click();
   await page.getByTestId('color-blue').click();
@@ -35,7 +56,7 @@ test('form, Markdown, persistence, templates and color presets stay in sync', as
   await expect(page.getByTestId('color-black')).toHaveAttribute('aria-pressed', 'true');
 
   await page.getByTestId('new-resume').click();
-  await page.getByRole('menuitem', { name: 'Blank résumé' }).click();
+  await page.getByTestId('new-blank').click();
   await expect(page.getByTestId('basics-name')).toHaveValue('');
 });
 
@@ -96,4 +117,41 @@ test('the local AI proxy rejects missing credentials without caching', async ({ 
   expect(response.status()).toBe(401);
   expect(response.headers()['cache-control']).toContain('no-store');
   await expect(response.json()).resolves.toEqual({ error: 'missing_api_key' });
+});
+
+test('AI translation creates a validated copy and never overwrites the source', async ({ page }) => {
+  await openFreshApp(page);
+  await page.getByTestId('basics-name').fill('Source Candidate');
+  const sourceLocale = await page.getByTestId('document-language').inputValue();
+  const targetLocale = sourceLocale === 'zh' ? 'en' : 'zh';
+
+  await page.getByTestId('ai-settings').click();
+  await page.getByTestId('ai-api-key').fill('test-only-key');
+  await page.getByTestId('ai-settings-save').click();
+
+  let requestBody = '';
+  await page.route('**/api/ai/chat', async (route) => {
+    const body = route.request().postDataJSON() as { options: { user: string } };
+    requestBody = body.options.user;
+    const payload = JSON.parse(body.options.user) as { basics: unknown; sections: unknown };
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ text: JSON.stringify({ basics: payload.basics, sections: payload.sections }) }),
+    });
+  });
+
+  const sourceItems = page.locator('.ink-doc-item');
+  await expect(sourceItems).toHaveCount(1);
+  await page.getByTestId('ai-translate-open').click();
+  await page.getByTestId('ai-translate-run').click();
+  await expect(sourceItems).toHaveCount(2);
+  await expect(page.getByTestId('document-language')).toHaveValue(targetLocale);
+  await expect(page.getByTestId('basics-name')).toHaveValue('Source Candidate');
+  expect(requestBody).not.toContain('limo@example.com');
+  expect(requestBody).not.toContain('2018-09');
+
+  await sourceItems.last().click();
+  await expect(page.getByTestId('document-language')).toHaveValue(sourceLocale);
+  await expect(page.getByTestId('basics-name')).toHaveValue('Source Candidate');
 });

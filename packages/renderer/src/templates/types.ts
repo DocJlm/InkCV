@@ -13,4 +13,10 @@ export interface TemplateDescriptor {
   nameEn: string;
   profile: TemplateProfile;
   component: FC<TemplateProps>;
+  audience: 'general' | 'tech' | 'ats' | 'experienced';
+  density: 'balanced' | 'compact' | 'spacious';
+  atsFriendly: boolean;
+  photoTreatment: 'inline' | 'portrait' | 'optional';
+  layoutZh: string;
+  layoutEn: string;
 }
